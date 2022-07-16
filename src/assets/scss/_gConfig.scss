@@ -1,0 +1,54 @@
+* {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+}
+
+html {
+   font-size: 17px;
+   scroll-behavior: smooth;
+}
+
+body {
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
+   font-family: 'Quicksand', sans-serif;
+}
+
+code {
+   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+}
+
+a {
+   text-decoration: none;
+   color: inherit;
+}
+
+::-moz-selection {
+   /* Code for Firefox */
+   color: white;
+   background: #3a3a3a;
+}
+
+::selection {
+   color: white;
+   background: #3a3a3a;
+}
+
+img {
+   width: 100%;
+   user-select: none;
+}
+
+button {
+   font-family: inherit;
+}
+
+.bold-font {
+   font-family: 'Quicksand', sans-serif;
+}
+
+.slim-font {
+   font-family: 'Yanone Kaffeesatz', sans-serif;
+}

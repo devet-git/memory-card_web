@@ -1,0 +1,98 @@
+.position {
+   &.pos--fixed {
+      position: fixed;
+   }
+
+   &.pos--sticky {
+      position: sticky;
+   }
+}
+
+.flex {
+   display: flex;
+
+   &.flex--wrap {
+      flex-wrap: wrap;
+   }
+
+   &.flex--center {
+      justify-content: center;
+      align-items: center;
+   }
+
+   &.flex--ver-center {
+      align-items: center;
+   }
+
+   &.flex--hor-center {
+      justify-content: center;
+   }
+
+   &.flex--sp-between {
+      justify-content: space-between;
+   }
+
+   &.flex--sp-evenly {
+      justify-content: space-evenly;
+   }
+
+   &.flex--sp-around {
+      justify-content: space-around;
+   }
+
+   &.flex--sp-end {
+      justify-content: flex-end;
+   }
+
+   &.flex-direction--row {
+      flex-direction: row;
+   }
+
+   &.flex-direction--row-reverse {
+      flex-direction: row-reverse;
+   }
+
+   &.flex-direction--col {
+      flex-direction: column;
+   }
+
+   @for $i from 5 to 500 {
+      &.flex--gap-#{$i} {
+         gap: #{$i}px;
+      }
+   }
+}
+
+@for $i from 5 to 500 {
+   .font-sz--#{$i} {
+      font-size: #{$i}px;
+   }
+
+   .w--#{$i} {
+      width: #{$i}px;
+   }
+
+   .top--#{$i} {
+      top: #{$i}px;
+   }
+
+   .h--#{$i} {
+      height: #{$i}px;
+   }
+
+   .pd--#{$i} {
+      padding: #{$i}px;
+   }
+}
+
+.border {
+   @for $i from 1 to 50 {
+      &.rad-#{$i} {
+         border-radius: #{$i}px;
+      }
+   }
+
+   &.rad-circle {
+      border-radius: 50%;
+   }
+}
