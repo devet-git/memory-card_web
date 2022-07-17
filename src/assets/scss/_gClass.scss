@@ -40,8 +40,9 @@
       justify-content: space-around;
    }
 
-   &.flex--sp-end {
+   &.flex--flex-end {
       justify-content: flex-end;
+
    }
 
    &.flex-direction--row {
@@ -63,7 +64,7 @@
    }
 }
 
-@for $i from 5 to 500 {
+@for $i from 5 to 1000 {
    .font-sz--#{$i} {
       font-size: #{$i}px;
    }
@@ -95,4 +96,8 @@
    &.rad-circle {
       border-radius: 50%;
    }
+}
+
+.dp--block {
+   display: block;
 }
