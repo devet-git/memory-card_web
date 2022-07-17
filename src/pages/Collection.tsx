@@ -32,7 +32,7 @@ function AddCollection() {
    } = useSharedState()
    const { collections, setCollections } = useCollectionContext()
 
-   const [inputPlaceholder, setInputPlaceholder] = useState("Tên bộ sưu tập. /Enter để xác nhân - /Esc để thoát")
+   const [inputPlaceholder, setInputPlaceholder] = useState("Tên bộ sưu tập. /Enter: Xác nhận. /Esc: Thoát")
    const keyPressHandler = (e: any) => {
       if (e.key === "Enter") {
          const isExist = collections.find((coll: { name: string }) => coll.name === newCollectionName)

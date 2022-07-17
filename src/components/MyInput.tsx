@@ -8,6 +8,6 @@ export const MyInput = styled.input<props>`
    font-family: inherit;
    padding: 5px;
    width: 100%;
-   border: none;
+   /* border: none; */
    ${props => props.bgColor && `background-color:${props.bgColor}`}
 `
