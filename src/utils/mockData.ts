@@ -3,9 +3,9 @@ const mockData = [
       name: "Thông dụng",
       pathname: "thong-dung",
       words: [
-         { source: "Hello", target: "Xin chào" },
-         { source: "Sorry", target: "Xin lỗi" },
-         { source: "Thank's - Thank you", target: "Cảm ơn" },
+         { id: new Date().getTime(), source: "Hello", target: "Xin chào" },
+         { id: new Date().getTime(), source: "Sorry", target: "Xin lỗi" },
+         { id: new Date().getTime(), source: "Thank's - Thank you", target: "Cảm ơn" },
       ]
    }
 ]

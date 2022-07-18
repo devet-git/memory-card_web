@@ -11,7 +11,7 @@ type WrapperProps = {
 const Wrapper = styled.div<WrapperProps>`
    background-color: transparent;
    padding: 5px;
-   width: 250px;
+   width: auto;
    height: 200px;
    max-height: 300px;
    cursor: pointer; 
