@@ -13,6 +13,10 @@ import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
 import MyModal from "components/MyModal";
 import { MyInput, MyTextarea } from "components/MyInput";
+import ActivityHeatmap from "components/ActivityHeatmap";
+import { Panel } from "components/ui";
+import { isDue, isNewCard, NEW_CARDS_PER_SESSION } from "utils/srs";
+import { dateKey } from "utils/dates";
 
 const Container = styled.div`
   display: flex;
@@ -21,6 +25,45 @@ const Container = styled.div`
 
   @media (max-width: 640px) {
     gap: 20px;
+  }
+`;
+
+const TodayRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+
+  .ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+
+    strong {
+      font-size: 22px;
+      color: var(--text-primary, #0f172a);
+    }
   }
 `;
 
@@ -353,7 +396,7 @@ const FeatureCard = styled.div`
 `;
 
 export default function HomePage() {
-  const { collections, stats, addCollection } = useCollectionContext();
+  const { collections, stats, settings, addCollection } = useCollectionContext();
   const navigate = useNavigate();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -370,6 +413,17 @@ export default function HomePage() {
   const masteryRate = totalCards > 0 ? Math.round((totalMastered / totalCards) * 100) : 0;
 
   const firstDeck = collections[0];
+
+  const dueCount = collections.reduce((acc, c) => acc + c.words.filter((w) => isDue(w)).length, 0);
+  const newCount = Math.min(
+    NEW_CARDS_PER_SESSION,
+    collections.reduce((acc, c) => acc + c.words.filter((w) => isNewCard(w)).length, 0)
+  );
+  const dailyGoal = settings.dailyGoal || 20;
+  const reviewedToday = stats.reviewLog?.[dateKey()] || 0;
+  const goalPct = Math.min(1, reviewedToday / dailyGoal);
+  const RING_R = 30;
+  const RING_C = 2 * Math.PI * RING_R;
 
   const handleCreateDeck = (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,6 +497,56 @@ export default function HomePage() {
           </MyButton>
         </HeroActionRow>
       </HeroBanner>
+
+      {/* TODAY: DUE CARDS + DAILY GOAL + ACTIVITY */}
+      <TodayRow>
+        <Panel>
+          <h3>Hôm nay</h3>
+          <div className="ring-wrap">
+            <div style={{ position: "relative", width: 76, height: 76 }}>
+              <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label={`Đã ôn ${reviewedToday}/${dailyGoal} thẻ`}>
+                <circle cx="38" cy="38" r={RING_R} fill="none" stroke="var(--bg-tertiary, #e2e8f0)" strokeWidth="8" />
+                <circle
+                  cx="38"
+                  cy="38"
+                  r={RING_R}
+                  fill="none"
+                  stroke={goalPct >= 1 ? "#10b981" : "#3b82f6"}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={RING_C * (1 - goalPct)}
+                  transform="rotate(-90 38 38)"
+                />
+              </svg>
+              <div className="ring-label">{Math.round(goalPct * 100)}%</div>
+            </div>
+            <div className="meta">
+              <span>
+                <strong>{reviewedToday}</strong>/{dailyGoal} thẻ mục tiêu
+              </span>
+              <span>
+                {dueCount} thẻ đến hạn • {newCount} thẻ mới
+              </span>
+              <div>
+                <MyButton
+                  variant="primary"
+                  size="sm"
+                  icon={<IoFlashOutline />}
+                  disabled={dueCount + newCount === 0}
+                  onClick={() => navigate("/review")}
+                >
+                  Ôn hôm nay
+                </MyButton>
+              </div>
+            </div>
+          </div>
+        </Panel>
+        <Panel>
+          <h3>Hoạt động gần đây</h3>
+          <ActivityHeatmap log={stats.reviewLog} goal={dailyGoal} weeks={16} />
+        </Panel>
+      </TodayRow>
 
       {/* STATS OVERVIEW */}
       <StatsGrid>

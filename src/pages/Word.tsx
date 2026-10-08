@@ -1550,6 +1550,8 @@ export default function WordPage() {
                     back={isReverseMode ? currentWord.source : currentWord.target}
                     phonetic={isReverseMode ? undefined : currentWord.phonetic}
                     example={currentWord.example}
+                    image={currentWord.image}
+                    mnemonic={currentWord.mnemonic}
                     status={currentWord.status}
                     starred={currentWord.starred}
                     onToggleStar={() => toggleStar(selectedCollection.pathname, currentWord.id)}
@@ -2015,6 +2017,8 @@ export default function WordPage() {
               back={word.target}
               phonetic={word.phonetic}
               example={word.example}
+              image={word.image}
+              mnemonic={word.mnemonic}
               status={word.status}
               starred={word.starred}
               onToggleStar={() => toggleStar(selectedCollection.pathname, word.id)}

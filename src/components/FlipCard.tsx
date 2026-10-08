@@ -13,6 +13,8 @@ interface CardProps {
   phonetic?: string;
   example?: string;
   notes?: string;
+  image?: string;
+  mnemonic?: string;
   status?: MasteryStatus;
   starred?: boolean;
   onToggleStar?: () => void;
@@ -179,6 +181,30 @@ const PhoneticText = styled.div<{ $compact?: boolean }>`
   }
 `;
 
+const MemoryAid = styled.div<{ $compact?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: ${(props) => (props.$compact ? "4px" : "8px")};
+  max-width: 100%;
+
+  img {
+    max-width: 100%;
+    max-height: ${(props) => (props.$compact ? "56px" : "110px")};
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .mnemonic {
+    font-size: ${(props) => (props.$compact ? "11.5px" : "13px")};
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.12);
+    padding: 3px 10px;
+    border-radius: 8px;
+  }
+`;
+
 const ExampleText = styled.p<{ $compact?: boolean }>`
   font-size: ${(props) => (props.$compact ? "12.5px" : "15px")};
   color: var(--text-secondary, #475569);
@@ -267,6 +293,8 @@ export default function FlipCard({
   back,
   phonetic,
   example,
+  image,
+  mnemonic,
   status = "new",
   starred = false,
   onToggleStar,
@@ -375,6 +403,21 @@ export default function FlipCard({
               {back}
             </PrimaryText>
             {example && <ExampleText $compact={compact}>"{example}"</ExampleText>}
+            {(image || mnemonic) && (
+              <MemoryAid $compact={compact}>
+                {image && (
+                  <img
+                    src={image}
+                    alt={front}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+                {mnemonic && <span className="mnemonic">💡 {mnemonic}</span>}
+              </MemoryAid>
+            )}
           </CardMainContent>
 
           <CardBottomBar $compact={compact}>

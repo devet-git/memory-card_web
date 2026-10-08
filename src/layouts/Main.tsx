@@ -12,9 +12,10 @@ import {
   MdOutlineApps,
   MdCloudQueue,
   MdMoreHoriz,
-  MdOutlineDashboardCustomize
+  MdOutlineDashboardCustomize,
+  MdOutlineInsights
 } from "react-icons/md";
-import { IoFolderOpenOutline, IoCafeOutline, IoHomeOutline } from "react-icons/io5";
+import { IoFolderOpenOutline, IoCafeOutline, IoHomeOutline, IoFlashOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
@@ -25,6 +26,7 @@ import MemCardLogo from "components/MemCardLogo";
 import DonateModal from "components/DonateModal";
 import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
+import { isDue } from "utils/srs";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -461,6 +463,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   } = useCollectionContext();
 
   const { speak, isLoading: isSpeakLoading } = useSpeak();
+  const dueCount = collections.reduce((acc, c) => acc + c.words.filter((w) => isDue(w)).length, 0);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -527,6 +530,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               >
                 <IoFolderOpenOutline />
                 Bộ sưu tập ({collections.length})
+              </NavItem>
+              <NavItem to="/review" $active={location.pathname.startsWith("/review")}>
+                <IoFlashOutline />
+                Ôn tập{dueCount > 0 ? ` (${dueCount})` : ""}
+              </NavItem>
+              <NavItem to="/stats" $active={location.pathname.startsWith("/stats")}>
+                <MdOutlineInsights />
+                Thống kê
               </NavItem>
               <NavItem
                 to="/apps"
@@ -668,12 +679,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           <span>Bộ thẻ ({collections.length})</span>
         </BottomNavItem>
 
-        <BottomNavItem
-          to="/apps"
-          $active={location.pathname.startsWith("/apps")}
-        >
-          <MdOutlineApps />
-          <span>Ứng dụng</span>
+        <BottomNavItem to="/review" $active={location.pathname.startsWith("/review")}>
+          <IoFlashOutline />
+          <span>Ôn tập{dueCount > 0 ? ` (${dueCount})` : ""}</span>
+        </BottomNavItem>
+
+        <BottomNavItem to="/stats" $active={location.pathname.startsWith("/stats")}>
+          <MdOutlineInsights />
+          <span>Thống kê</span>
         </BottomNavItem>
 
         <BottomNavButton
@@ -692,6 +705,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           onClose={() => setShowMobileMenuModal(false)}
         >
           <UtilitiesMenuGrid>
+            <UtilityCard as={Link} to="/apps" onClick={() => setShowMobileMenuModal(false)}>
+              <div className="header">
+                <MdOutlineApps color="#0ea5e9" />
+                <span>Ứng dụng liên quan</span>
+              </div>
+              <div className="desc">Hệ sinh thái các ứng dụng của tác giả</div>
+            </UtilityCard>
+
             <UtilityCard
               onClick={() => {
                 setShowMobileMenuModal(false);
