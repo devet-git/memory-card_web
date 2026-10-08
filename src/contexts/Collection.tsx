@@ -52,6 +52,15 @@ interface CollectionContextType {
   // Backup & Restore
   exportToJSON: () => string;
   importFromJSON: (jsonData: string) => { success: boolean; count?: number; error?: string };
+  transferWords: (opts: {
+    from: string;
+    ids: (string | number)[];
+    mode: "move" | "copy";
+    to?: string;
+    newDeckName?: string;
+  }) => { moved: number; skipped: number; pathname?: string; error?: string };
+  bulkUpdateWords: (collectionPathname: string, ids: (string | number)[], patch: Partial<WordItem>) => void;
+  deleteWords: (collectionPathname: string, ids: (string | number)[]) => void;
   mergeFromJSON: (jsonData: string) => { success: boolean; error?: string };
   resetToDefaultData: () => void;
 }
@@ -587,6 +596,80 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  // Move or copy cards to another (or a brand-new) collection; cards whose front already exists there are skipped
+  const transferWords = useCallback(
+    (opts: { from: string; ids: (string | number)[]; mode: "move" | "copy"; to?: string; newDeckName?: string }) => {
+      const source = collections.find((c) => c.pathname === opts.from);
+      if (!source) return { moved: 0, skipped: 0, error: "Không tìm thấy bộ thẻ nguồn" };
+      const idSet = new Set(opts.ids.map(String));
+      const picked = source.words.filter((w) => idSet.has(String(w.id)));
+      if (picked.length === 0) return { moved: 0, skipped: 0, error: "Chưa chọn thẻ nào" };
+
+      let target = opts.to ? collections.find((c) => c.pathname === opts.to) : undefined;
+      let created: CollectionItem | null = null;
+      if (!target) {
+        const name = (opts.newDeckName || "").trim();
+        if (!name) return { moved: 0, skipped: 0, error: "Hãy chọn bộ thẻ đích hoặc nhập tên bộ mới" };
+        if (collections.some((c) => c.name.toLowerCase() === name.toLowerCase() || c.pathname === removeAccent(name))) {
+          return { moved: 0, skipped: 0, error: "Đã có bộ thẻ với tên này, hãy chọn nó trong danh sách" };
+        }
+        const now = Date.now();
+        created = { id: `coll-${now}`, name, pathname: removeAccent(name), category: source.category || "Tổng hợp", description: "", color: source.color || "#3b82f6", createdAt: now, updatedAt: now, words: [] };
+        target = created;
+      }
+      if (target.pathname === source.pathname) return { moved: 0, skipped: 0, error: "Bộ đích trùng với bộ nguồn" };
+
+      const existing = new Set(target.words.map((w) => w.source.trim().toLowerCase()));
+      const toAdd: WordItem[] = [];
+      const movedIds = new Set<string>();
+      let skipped = 0;
+      picked.forEach((w, i) => {
+        const key = w.source.trim().toLowerCase();
+        if (existing.has(key)) {
+          skipped++;
+          return;
+        }
+        existing.add(key);
+        movedIds.add(String(w.id));
+        toAdd.push(opts.mode === "copy" ? { ...w, id: `w-copy-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}` } : w);
+      });
+
+      const targetPath = target.pathname;
+      setCollections((prev) => {
+        const base = created ? [created, ...prev] : prev;
+        return base.map((c) => {
+          if (c.pathname === targetPath) return { ...c, updatedAt: Date.now(), words: [...toAdd, ...c.words] };
+          if (opts.mode === "move" && c.pathname === opts.from) {
+            return { ...c, updatedAt: Date.now(), words: c.words.filter((w) => !movedIds.has(String(w.id))) };
+          }
+          return c;
+        });
+      });
+      return { moved: toAdd.length, skipped, pathname: targetPath };
+    },
+    [collections]
+  );
+
+  const bulkUpdateWords = useCallback((collectionPathname: string, ids: (string | number)[], patch: Partial<WordItem>) => {
+    const idSet = new Set(ids.map(String));
+    setCollections((prev) =>
+      prev.map((c) =>
+        c.pathname !== collectionPathname
+          ? c
+          : { ...c, updatedAt: Date.now(), words: c.words.map((w) => (idSet.has(String(w.id)) ? { ...w, ...patch } : w)) }
+      )
+    );
+  }, []);
+
+  const deleteWords = useCallback((collectionPathname: string, ids: (string | number)[]) => {
+    const idSet = new Set(ids.map(String));
+    setCollections((prev) =>
+      prev.map((c) =>
+        c.pathname !== collectionPathname ? c : { ...c, updatedAt: Date.now(), words: c.words.filter((w) => !idSet.has(String(w.id))) }
+      )
+    );
+  }, []);
+
   // Merge a backup into local data instead of replacing it (used by auto sync)
   const mergeFromJSON = useCallback((jsonData: string) => {
     try {
@@ -632,6 +715,9 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     importSharedCollection,
     exportToJSON,
     importFromJSON,
+    transferWords,
+    bulkUpdateWords,
+    deleteWords,
     mergeFromJSON,
     resetToDefaultData
   };

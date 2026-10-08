@@ -32,6 +32,7 @@ import AutoFillButton from "components/AutoFillButton";
 import ActionMenu from "components/ActionMenu";
 import WordSuggest from "components/WordSuggest";
 import SuggestWordsModal from "components/SuggestWordsModal";
+import TransferWordsModal from "components/TransferWordsModal";
 import AIEnrichButton from "components/ai/AIEnrichButton";
 import useAIConfig from "hooks/useAIConfig";
 import AIGenerateModal from "components/ai/AIGenerateModal";
@@ -887,6 +888,9 @@ export default function WordPage() {
     updateWordStatus,
     recordReview,
     bulkImportWords,
+    transferWords,
+    bulkUpdateWords,
+    deleteWords,
     settings
   } = useCollectionContext();
 
@@ -916,6 +920,11 @@ export default function WordPage() {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [bulkText, setBulkText] = useState("");
   const [bulkFillNote, setBulkFillNote] = useState<string | null>(null);
+
+  // Multi-select in the management table
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [transferMode, setTransferMode] = useState<"move" | "copy" | null>(null);
+  const [selectionNote, setSelectionNote] = useState<string | null>(null);
 
   // Search & filter
   const [tableSearch, setTableSearch] = useState(searchParams.get("q") || ""); // "q" comes from global search
@@ -1193,6 +1202,35 @@ export default function WordPage() {
     });
     return ids;
   }, [words]);
+
+  const matchesTable = (w: WordItem) =>
+    w.source.toLowerCase().includes(tableSearch.toLowerCase()) || w.target.toLowerCase().includes(tableSearch.toLowerCase());
+  const tableWords = words.filter(matchesTable);
+  // Only count selected cards that still exist in this collection
+  const selectedList = words.filter((w) => selectedIds.has(String(w.id))).map((w) => w.id);
+  const allVisibleSelected = tableWords.length > 0 && tableWords.every((w) => selectedIds.has(String(w.id)));
+
+  const toggleSelected = (id: string | number) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const key = String(id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const toggleSelectAllVisible = () =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) tableWords.forEach((w) => next.delete(String(w.id)));
+      else tableWords.forEach((w) => next.add(String(w.id)));
+      return next;
+    });
+
+  const flashSelectionNote = (text: string) => {
+    setSelectionNote(text);
+    setTimeout(() => setSelectionNote(null), 3500);
+  };
 
   const handleRemoveDuplicates = () => {
     if (!collectionName || duplicateIds.length === 0) return;
@@ -2242,15 +2280,92 @@ export default function WordPage() {
               </div>
             )}
             <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-              Hiển thị: {words.filter((w) => w.source.toLowerCase().includes(tableSearch.toLowerCase()) || w.target.toLowerCase().includes(tableSearch.toLowerCase())).length} / {words.length} thẻ
+              Hiển thị: {tableWords.length} / {words.length} thẻ
             </div>
           </div>
+
+          {(selectedList.length > 0 || selectionNote) && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+                padding: "8px 12px",
+                borderRadius: 12,
+                background: "rgba(59, 130, 246, 0.1)",
+                position: "sticky",
+                top: 44,
+                zIndex: 60
+              }}
+            >
+              {selectedList.length > 0 && <strong style={{ fontSize: 13 }}>Đã chọn {selectedList.length}</strong>}
+              {selectionNote && <span style={{ fontSize: 13, color: "#059669" }}>{selectionNote}</span>}
+              {selectedList.length > 0 && (
+                <>
+                  <MyButton variant="secondary" size="sm" onClick={() => setTransferMode("move")}>
+                    Chuyển sang bộ khác
+                  </MyButton>
+                  <MyButton variant="secondary" size="sm" onClick={() => setTransferMode("copy")}>
+                    Sao chép
+                  </MyButton>
+                  <MyButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      bulkUpdateWords(selectedCollection.pathname, selectedList, { starred: true });
+                      flashSelectionNote("Đã gắn sao các thẻ đã chọn.");
+                    }}
+                  >
+                    ⭐ Gắn sao
+                  </MyButton>
+                  <MyButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (!window.confirm(`Đặt lại tiến độ học của ${selectedList.length} thẻ về "Chưa ôn"?`)) return;
+                      bulkUpdateWords(selectedCollection.pathname, selectedList, {
+                        status: "new",
+                        reviewCount: 0,
+                        lastReviewed: undefined,
+                        dueDate: undefined,
+                        intervalDays: undefined,
+                        ease: undefined,
+                        lapses: undefined,
+                        wrongCount: 0
+                      });
+                      flashSelectionNote("Đã đặt lại tiến độ.");
+                    }}
+                  >
+                    Đặt lại tiến độ
+                  </MyButton>
+                  <MyButton
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (!window.confirm(`Xóa ${selectedList.length} thẻ đã chọn? Không thể hoàn tác.`)) return;
+                      deleteWords(selectedCollection.pathname, selectedList);
+                      setSelectedIds(new Set());
+                    }}
+                  >
+                    Xóa
+                  </MyButton>
+                  <MyButton variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                    Bỏ chọn
+                  </MyButton>
+                </>
+              )}
+            </div>
+          )}
 
           <DesktopTableContainer>
             <TableWrapper>
               <Table>
                 <thead>
                   <tr>
+                    <th style={{ width: "36px" }}>
+                      <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} title="Chọn tất cả thẻ đang hiển thị" />
+                    </th>
                     <th style={{ width: "40px" }}>#</th>
                     <th>Thuật ngữ (Mặt trước)</th>
                     <th>Phiên âm</th>
@@ -2261,13 +2376,12 @@ export default function WordPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {words
-                    .filter((w) =>
-                      w.source.toLowerCase().includes(tableSearch.toLowerCase()) ||
-                      w.target.toLowerCase().includes(tableSearch.toLowerCase())
-                    )
+                  {tableWords
                     .map((word, idx) => (
-                      <tr key={word.id}>
+                      <tr key={word.id} style={selectedIds.has(String(word.id)) ? { background: "rgba(59, 130, 246, 0.08)" } : undefined}>
+                        <td>
+                          <input type="checkbox" checked={selectedIds.has(String(word.id))} onChange={() => toggleSelected(word.id)} aria-label={`Chọn ${word.source}`} />
+                        </td>
                         <td>{idx + 1}</td>
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}>
@@ -2331,15 +2445,12 @@ export default function WordPage() {
 
           {/* MOBILE WORD CARDS LIST */}
           <MobileCardList>
-            {words
-              .filter((w) =>
-                w.source.toLowerCase().includes(tableSearch.toLowerCase()) ||
-                w.target.toLowerCase().includes(tableSearch.toLowerCase())
-              )
+            {tableWords
               .map((word) => (
-                <MobileWordCard key={word.id}>
+                <MobileWordCard key={word.id} style={selectedIds.has(String(word.id)) ? { outline: "2px solid #3b82f6" } : undefined}>
                   <div className="card-top">
                     <div className="word-head">
+                      <input type="checkbox" checked={selectedIds.has(String(word.id))} onChange={() => toggleSelected(word.id)} aria-label={`Chọn ${word.source}`} />
                       <button
                         onClick={() => toggleStar(selectedCollection.pathname, word.id)}
                         style={{ color: word.starred ? "#f59e0b" : "#cbd5e1", fontSize: "18px", background: "none", border: "none", padding: 0, cursor: "pointer" }}
@@ -2527,6 +2638,25 @@ export default function WordPage() {
         />
       )}
 
+      {transferMode && (
+        <TransferWordsModal
+          mode={transferMode}
+          count={selectedList.length}
+          currentPathname={selectedCollection.pathname}
+          collections={collections}
+          onClose={() => setTransferMode(null)}
+          onConfirm={(target) => {
+            const res = transferWords({ from: selectedCollection.pathname, ids: selectedList, mode: transferMode, ...target });
+            if (res.error) return res.error;
+            setTransferMode(null);
+            setSelectedIds(new Set());
+            flashSelectionNote(
+              `${transferMode === "move" ? "Đã chuyển" : "Đã sao chép"} ${res.moved} thẻ${res.skipped ? `, bỏ qua ${res.skipped} thẻ trùng` : ""}.`
+            );
+            return null;
+          }}
+        />
+      )}
       {showSuggestWords && (
         <SuggestWordsModal
           existingSources={words.map((w) => w.source)}
