@@ -1,74 +1,124 @@
-import { useEffect } from "react"
-import { useState } from "react"
-import styled from "styled-components"
-import { CgClose } from "react-icons/cg"
-import MyButton from "components/MyButton"
+import React, { useEffect } from "react";
+import styled from "styled-components";
+import { IoClose } from "react-icons/io5";
 
+const Backdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease-out;
 
-const ContentWrapper = styled.div``
-const Header = styled.header``
-const Body = styled.div``
-type styleProps = {
-   isShow: boolean
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`;
+
+const ModalContent = styled.div<{ maxWidth?: string }>`
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  width: 100%;
+  max-width: ${(props) => props.maxWidth || "520px"};
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes zoomIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+`;
+
+const ModalHeader = styled.header`
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  background-color: var(--bg-secondary, #ffffff);
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0;
+  }
+`;
+
+const CloseButton = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary, #f1f5f9);
+    color: var(--text-primary, #0f172a);
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 20px;
+  overflow-y: auto;
+  color: var(--text-primary, #0f172a);
+`;
+
+interface MyModalProps {
+  title?: string;
+  children: React.ReactNode;
+  onClose: () => void;
+  maxWidth?: string;
 }
-const Container = styled.div<styleProps>`
-   position: fixed;
-   top: 0;
-   bottom: 0;
-   left: 0;
-   width: 100%;
-   background-color: #c0c0c03e;
-   backdrop-filter: blur(2px);
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   ${props => !props.isShow && `display: none;`}
-   ${ContentWrapper}{
-      background-color: white;
-      border-radius: 3px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px #a6a6a6;
-      min-width: 300px;
-      ${Header}{
-         padding: 5px;
-         background-color: #ececec;
-         display: flex;
-         justify-content: space-between;
-         align-items: center;
+
+export default function MyModal({ title, children, onClose, maxWidth }: MyModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
       }
-      ${Body}{
-         padding: 5px;
-      }
-   }
-`
-type Props = {
-   title?: string
-   children: any,
-   onClose: any
-}
-export default function MyModal(props: Props) {
-   const [isShow, setIsShow] = useState(true)
-   useEffect(() => {
-      setIsShow(true)
-   }, [])
-   return (
-      <Container isShow={isShow}>
-         <ContentWrapper id="box">
-            <Header>
-               <h3>{props.title}</h3>
-               <MyButton
-                  icon={<CgClose />}
-                  fontSz={10}
-                  color="white"
-                  bgColor="red"
-                  onClick={(e: any) => {
-                     setIsShow(false)
-                     props.onClose();
-                  }}
-               />
-            </Header>
-            <Body>{props.children}</Body>
-         </ContentWrapper>
-      </Container>
-   )
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <Backdrop onClick={onClose}>
+      <ModalContent maxWidth={maxWidth} onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <h3>{title}</h3>
+          <CloseButton onClick={onClose} title="Đóng (Esc)">
+            <IoClose size={22} />
+          </CloseButton>
+        </ModalHeader>
+        <ModalBody>{children}</ModalBody>
+      </ModalContent>
+    </Backdrop>
+  );
 }
