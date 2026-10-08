@@ -258,6 +258,9 @@ console.log("Parsing…");
 const { dictionary: cmu } = await import(pathToFileURL(join(cmuPkg, "index.js")).href);
 const wn = parseWordNet(wnDir);
 const viEn = loadViEnglish(viPkg);
+// Hand-checked meanings for the most common words; they win over the automatic Wiktionary pick
+const viOverrides = JSON.parse(readFileSync(join(ROOT, "scripts", "vi-overrides.json"), "utf8"));
+let overridesApplied = 0;
 const wnHas = (w) => Object.values(wn.index).some((m) => m.has(w));
 
 const freq = readFileSync(join(CACHE, "en_50k.txt"), "utf8").split("\n").map((l) => l.split(" ")[0]);
@@ -309,7 +312,11 @@ vocab.forEach((w, i) => {
   }
   const lemma = lemmatize(w);
   const posLetters = senses.map((s) => s.pos).join("");
-  const vi = viEn.has(w) ? pickVietnamese(w, viEn.get(w), posLetters) : "";
+  let vi = viEn.has(w) ? pickVietnamese(w, viEn.get(w), posLetters) : "";
+  if (viOverrides[w]) {
+    vi = viOverrides[w];
+    overridesApplied++;
+  }
   entries.set(w, [ipa, posLetters, def, ex, i < frequentCount ? i + 1 : 0, lemma, vi]);
 });
 
@@ -359,10 +366,13 @@ Vietnamese meanings: Wiktionary (https://en.wiktionary.org/) extracted by Kaikki
   (https://creativecommons.org/licenses/by-sa/4.0/). This data was filtered, re-indexed from Vietnamese->English
   to English->Vietnamese and ranked; derived data stays under CC BY-SA 4.0.
 
+Hand-checked Vietnamese meanings for ~1000 common words (scripts/vi-overrides.json) were written for this project.
+
 Rebuild with: node scripts/build-dict.mjs
 `
 );
 
 const files = readdirSync(OUT).length;
+console.log(`Hand-checked meanings applied: ${overridesApplied}/${Object.keys(viOverrides).length}`);
 console.log(`Done: ${vocab.length} words, ${shards.size} shards (${files} files), ${(rawBytes / 1e6).toFixed(2)} MB raw / ${(gzBytes / 1e6).toFixed(2)} MB gzip`);
 console.log("sample:", JSON.stringify(entries.get("went")), JSON.stringify(entries.get("delicious")), JSON.stringify(entries.get("running")));

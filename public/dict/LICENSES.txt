@@ -17,4 +17,6 @@ Vietnamese meanings: Wiktionary (https://en.wiktionary.org/) extracted by Kaikki
   (https://creativecommons.org/licenses/by-sa/4.0/). This data was filtered, re-indexed from Vietnamese->English
   to English->Vietnamese and ranked; derived data stays under CC BY-SA 4.0.
 
+Hand-checked Vietnamese meanings for ~1000 common words (scripts/vi-overrides.json) were written for this project.
+
 Rebuild with: node scripts/build-dict.mjs
