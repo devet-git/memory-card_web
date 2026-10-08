@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -15,7 +15,7 @@ import MyModal from "components/MyModal";
 import { MyInput, MyTextarea } from "components/MyInput";
 import ActivityHeatmap from "components/ActivityHeatmap";
 import { Panel } from "components/ui";
-import { isDue, isNewCard, NEW_CARDS_PER_SESSION } from "utils/srs";
+import { buildDailyPlan } from "utils/plan";
 import { dateKey } from "utils/dates";
 
 const Container = styled.div`
@@ -414,11 +414,7 @@ export default function HomePage() {
 
   const firstDeck = collections[0];
 
-  const dueCount = collections.reduce((acc, c) => acc + c.words.filter((w) => isDue(w)).length, 0);
-  const newCount = Math.min(
-    NEW_CARDS_PER_SESSION,
-    collections.reduce((acc, c) => acc + c.words.filter((w) => isNewCard(w)).length, 0)
-  );
+  const plan = useMemo(() => buildDailyPlan(collections), [collections]);
   const dailyGoal = settings.dailyGoal || 20;
   const reviewedToday = stats.reviewLog?.[dateKey()] || 0;
   const goalPct = Math.min(1, reviewedToday / dailyGoal);
@@ -526,18 +522,23 @@ export default function HomePage() {
                 <strong>{reviewedToday}</strong>/{dailyGoal} thẻ mục tiêu
               </span>
               <span>
-                {dueCount} thẻ đến hạn • {newCount} thẻ mới
+                {plan.due} thẻ đến hạn • {plan.leeches} ngoan cố • {plan.fresh} thẻ mới
               </span>
               <div>
                 <MyButton
                   variant="primary"
                   size="sm"
                   icon={<IoFlashOutline />}
-                  disabled={dueCount + newCount === 0}
+                  disabled={plan.items.length === 0}
                   onClick={() => navigate("/review")}
                 >
                   Ôn hôm nay
                 </MyButton>
+                {plan.leechTotal > 0 && (
+                  <MyButton variant="ghost" size="sm" onClick={() => navigate("/review?leech=1")} title="Những thẻ bạn hay quên">
+                    ⚠ {plan.leechTotal} ngoan cố
+                  </MyButton>
+                )}
               </div>
             </div>
           </div>

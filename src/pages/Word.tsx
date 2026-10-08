@@ -29,6 +29,7 @@ import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
 import useWordProfiles from "hooks/useWordProfiles";
+import { isLeech } from "utils/plan";
 import { pickDistractors } from "utils/distractors";
 import AutoFillButton from "components/AutoFillButton";
 import ActionMenu from "components/ActionMenu";
@@ -2409,6 +2410,11 @@ export default function WordPage() {
                           <StatusBadge $status={word.status}>
                             {word.status === "mastered" ? "Đã thuộc" : word.status === "learning" ? "Đang học" : "Chưa ôn"}
                           </StatusBadge>
+                          {isLeech(word) && (
+                            <span title="Thẻ bạn hay quên" style={{ marginLeft: 6, fontSize: 12, color: "#d97706", fontWeight: 700 }}>
+                              ⚠ Ngoan cố
+                            </span>
+                          )}
                         </td>
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                           <div style={{ display: "inline-flex", gap: "4px" }}>
@@ -2477,6 +2483,7 @@ export default function WordPage() {
                     <StatusBadge $status={word.status}>
                       {word.status === "mastered" ? "Đã thuộc" : word.status === "learning" ? "Đang học" : "Chưa ôn"}
                     </StatusBadge>
+                    {isLeech(word) && <span style={{ fontSize: 12, color: "#d97706", fontWeight: 700 }}>⚠ Ngoan cố</span>}
 
                     <div style={{ display: "inline-flex", gap: "6px" }}>
                       <MyButton

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
@@ -6,19 +6,15 @@ import useCollectionContext from "contexts/Collection";
 import FlipCard from "components/FlipCard";
 import MyButton from "components/MyButton";
 import { PageContainer, Panel, MutedText } from "components/ui";
-import { Grade, isDue, isNewCard, previewInterval, NEW_CARDS_PER_SESSION } from "utils/srs";
+import { Grade, previewInterval } from "utils/srs";
+import { buildDailyPlan, isLeech, PlanItem } from "utils/plan";
+import AIEnrichButton from "components/ai/AIEnrichButton";
+import { MyInput } from "components/MyInput";
 import { playSound } from "utils/sound";
 import { dateKey } from "utils/dates";
 import { WordItem } from "types";
 
-interface QueueItem {
-  pathname: string;
-  wordId: string | number;
-  reversed?: boolean; // ask meaning -> term for well-known cards
-}
-
-const REVERSE_MIN_INTERVAL_DAYS = 7;
-const REVERSE_CHANCE = 0.4;
+type QueueItem = PlanItem;
 
 const Progress = styled.div`
   height: 8px;
@@ -95,27 +91,18 @@ export default function ReviewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const deckFilter = searchParams.get("deck");
+  const leechOnly = searchParams.get("leech") === "1";
   const deckName = deckFilter ? collections.find((c) => c.pathname === deckFilter)?.name : undefined;
 
-  const buildQueue = useCallback((): QueueItem[] => {
-    const now = Date.now();
-    const due: QueueItem[] = [];
-    const fresh: QueueItem[] = [];
-    collections.forEach((c) => {
-      if (deckFilter && c.pathname !== deckFilter) return;
-      c.words.forEach((w) => {
-        if (isDue(w, now)) {
-          const reversed = settings.reverseReview !== false && (w.intervalDays || 0) >= REVERSE_MIN_INTERVAL_DAYS && Math.random() < REVERSE_CHANCE;
-          due.push({ pathname: c.pathname, wordId: w.id, reversed });
-        }
-        else if (isNewCard(w)) fresh.push({ pathname: c.pathname, wordId: w.id });
-      });
-    });
-    return [...due, ...fresh.slice(0, NEW_CARDS_PER_SESSION)];
-  }, [collections, deckFilter, settings.reverseReview]);
+  const buildPlan = useCallback(
+    () => buildDailyPlan(collections, { deck: deckFilter, onlyLeeches: leechOnly, reverse: settings.reverseReview !== false }),
+    [collections, deckFilter, leechOnly, settings.reverseReview]
+  );
 
   // The queue is frozen at session start; "Quên" cards are appended again at the end
-  const [queue, setQueue] = useState<QueueItem[]>(buildQueue);
+  const [plan, setPlan] = useState(buildPlan);
+  const [queue, setQueue] = useState<QueueItem[]>(() => plan.items);
+  const [mnemonicDraft, setMnemonicDraft] = useState<string | null>(null);
   const [position, setPosition] = useState(0);
   const [done, setDone] = useState(0);
   const [reveal, setReveal] = useState(0); // bump to remount the card
@@ -147,6 +134,7 @@ export default function ReviewPage() {
       }
       setPosition((p) => p + 1);
       setFlipped(false);
+      setMnemonicDraft(null);
       setReveal((r) => r + 1);
     },
     [current, currentWord, reviewWord]
@@ -189,13 +177,33 @@ export default function ReviewPage() {
   }, [rate, undo, history.length]);
 
   const restart = () => {
-    setQueue(buildQueue());
+    const next = buildPlan();
+    setPlan(next);
+    setQueue(next.items);
     setPosition(0);
     setDone(0);
     setHistory([]);
     setFlipped(false);
     setReveal((r) => r + 1);
   };
+
+  // Same page, different filter (?deck= / ?leech=): rebuild the session instead of keeping the old queue
+  const filterKey = `${deckFilter || ""}|${leechOnly}`;
+  const lastFilterKey = useRef(filterKey);
+  useEffect(() => {
+    if (lastFilterKey.current === filterKey) return;
+    lastFilterKey.current = filterKey;
+    const next = buildPlan();
+    setPlan(next);
+    setQueue(next.items);
+    setPosition(0);
+    setDone(0);
+    setHistory([]);
+    setFlipped(false);
+    setMnemonicDraft(null);
+    setReveal((r) => r + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
 
   const total = queue.length;
   const goal = settings.dailyGoal || 20;
@@ -204,10 +212,23 @@ export default function ReviewPage() {
   return (
     <PageContainer>
       <Panel>
-        <h2>Ôn tập hôm nay{deckName ? ` — ${deckName}` : ""}</h2>
+        <h2>
+          {leechOnly ? "Luyện thẻ ngoan cố" : "Ôn tập hôm nay"}
+          {deckName ? ` — ${deckName}` : ""}
+        </h2>
         <MutedText>
-          Thẻ đến hạn và thẻ mới được xếp lịch theo thuật toán lặp lại ngắt quãng. Hôm nay bạn đã ôn {today}/{goal} thẻ.
+          {leechOnly
+            ? `${plan.items.length} thẻ bạn hay quên, xếp từ thẻ sai nhiều nhất.`
+            : `Kế hoạch hôm nay: ${plan.due} thẻ đến hạn • ${plan.leeches} thẻ ngoan cố • ${plan.fresh} thẻ mới.`}{" "}
+          Hôm nay bạn đã ôn {today}/{goal} thẻ.
         </MutedText>
+        {!leechOnly && plan.leechTotal > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <MyButton variant="ghost" size="sm" onClick={() => navigate(`/review?leech=1${deckFilter ? `&deck=${deckFilter}` : ""}`)}>
+              Luyện riêng {plan.leechTotal} thẻ ngoan cố →
+            </MyButton>
+          </div>
+        )}
       </Panel>
 
       {!currentWord || position >= queue.length ? (
@@ -250,6 +271,43 @@ export default function ReviewPage() {
             status={currentWord.status}
             height="clamp(300px, 42vh, 380px)"
           />
+
+          {isLeech(currentWord) && (
+            <Panel style={{ borderColor: "#f59e0b", background: "rgba(245, 158, 11, 0.08)", padding: "12px 14px" }}>
+              <strong style={{ fontSize: 14 }}>⚠ Thẻ ngoan cố</strong>
+              <MutedText style={{ margin: "4px 0 8px" }}>
+                Bạn đã quên thẻ này {currentWord.lapses || 0} lần (sai {currentWord.wrongCount || 0} lần). Ôn thêm sẽ ít hiệu quả — hãy gắn nó với một hình ảnh hay câu nói
+                dễ nhớ, rồi đặt một câu với từ này.
+              </MutedText>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ flex: "1 1 220px" }}>
+                  <MyInput
+                    value={mnemonicDraft ?? currentWord.mnemonic ?? ""}
+                    onChange={(e) => setMnemonicDraft(e.target.value)}
+                    placeholder="Mẹo nhớ của bạn (nghe giống..., hình ảnh...)"
+                  />
+                </div>
+                <MyButton
+                  variant="primary"
+                  size="sm"
+                  disabled={mnemonicDraft === null}
+                  onClick={() => {
+                    if (mnemonicDraft !== null && current) {
+                      updateWord(current.pathname, current.wordId, { mnemonic: mnemonicDraft.trim() || undefined });
+                      setMnemonicDraft(null);
+                    }
+                  }}
+                >
+                  Lưu mẹo
+                </MyButton>
+                <AIEnrichButton
+                  word={currentWord.source}
+                  meaning={currentWord.target}
+                  onResult={(r) => r.mnemonic && setMnemonicDraft(r.mnemonic)}
+                />
+              </div>
+            </Panel>
+          )}
 
           <MutedText>Space/Enter: lật thẻ • 1-4: chấm điểm • Z: hoàn tác</MutedText>
           <RatingRow>

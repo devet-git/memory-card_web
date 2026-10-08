@@ -1,11 +1,13 @@
 import React, { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import useCollectionContext from "contexts/Collection";
 import ActivityHeatmap from "components/ActivityHeatmap";
 import { PageContainer, Panel, MutedText } from "components/ui";
 import { daysAgoKey, dayOfWeek } from "utils/dates";
 import { computeBadges } from "utils/badges";
+import { isLeech } from "utils/plan";
+import MyButton from "components/MyButton";
 
 const Cols = styled.div`
   display: grid;
@@ -96,6 +98,7 @@ const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 export default function StatsPage() {
   const { collections, stats, settings } = useCollectionContext();
+  const navigate = useNavigate();
   const goal = settings.dailyGoal || 20;
   const log = useMemo(() => stats.reviewLog || {}, [stats.reviewLog]);
 
@@ -123,6 +126,8 @@ export default function StatsPage() {
   }, [log]);
   const weekMax = Math.max(goal, ...week.map((d) => d.count), 1);
   const weekTotal = week.reduce((a, d) => a + d.count, 0);
+
+  const leechCount = useMemo(() => words.filter(isLeech).length, [words]);
 
   const hardWords = useMemo(
     () =>
@@ -218,7 +223,14 @@ export default function StatsPage() {
       </Panel>
 
       <Panel>
-        <h3>Từ hay sai nhất</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <h3 style={{ margin: 0 }}>Từ hay sai nhất</h3>
+          {leechCount > 0 && (
+            <MyButton variant="outline" size="sm" onClick={() => navigate("/review?leech=1")}>
+              Luyện {leechCount} thẻ ngoan cố →
+            </MyButton>
+          )}
+        </div>
         {hardWords.length === 0 ? (
           <MutedText>Chưa có từ nào bị sai. Hãy làm vài bài ôn tập hoặc trắc nghiệm!</MutedText>
         ) : (
@@ -228,7 +240,9 @@ export default function StatsPage() {
                 <strong>{w.source}</strong> — {w.target}
                 <div className="meta">{w.collection.name}</div>
               </span>
-              <span className="count">sai {w.wrongCount} lần</span>
+              <span className="count">
+                {isLeech(w) && "⚠ "}sai {w.wrongCount} lần
+              </span>
             </HardRow>
           ))
         )}
