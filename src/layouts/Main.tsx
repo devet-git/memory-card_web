@@ -7,13 +7,21 @@ import {
   MdOutlineHelpOutline,
   MdOutlineFileDownload,
   MdOutlineFileUpload,
-  MdOutlineRestartAlt
+  MdOutlineRestartAlt,
+  MdVolumeUp,
+  MdOutlineApps,
+  MdCloudQueue
 } from "react-icons/md";
-import { IoFlashOutline, IoFolderOpenOutline } from "react-icons/io5";
+import { IoFlashOutline, IoFolderOpenOutline, IoCafeOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
 import MyModal from "components/MyModal";
+import { speakWord } from "utils/speech";
+import { MyInput } from "components/MyInput";
+import MemCardLogo from "components/MemCardLogo";
+import DonateModal from "components/DonateModal";
+import GoogleDriveModal from "components/GoogleDriveModal";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -38,7 +46,8 @@ const Header = styled.header`
 `;
 
 const NavContainer = styled.div`
-  max-width: 1160px;
+  max-width: 1480px;
+  width: 100%;
   margin: 0 auto;
   height: 64px;
   display: flex;
@@ -92,7 +101,7 @@ const NavLinks = styled.nav`
   }
 `;
 
-const NavItem = styled(Link)<{ active: boolean }>`
+const NavItem = styled(Link)<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -100,8 +109,8 @@ const NavItem = styled(Link)<{ active: boolean }>`
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: ${(props) => (props.active ? "#2563eb" : "var(--text-secondary, #475569)")};
-  background-color: ${(props) => (props.active ? "rgba(37, 99, 235, 0.08)" : "transparent")};
+  color: ${(props) => (props.$active ? "#2563eb" : "var(--text-secondary, #475569)")};
+  background-color: ${(props) => (props.$active ? "rgba(37, 99, 235, 0.08)" : "transparent")};
   transition: all 0.15s ease;
 
   &:hover {
@@ -135,10 +144,14 @@ const StreakBadge = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
-  max-width: 1160px;
+  max-width: 1480px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 20px 60px 20px;
+  padding: 24px 28px 60px 28px;
+
+  @media (max-width: 640px) {
+    padding: 16px 14px 60px 14px;
+  }
 `;
 
 const Footer = styled.footer`
@@ -207,6 +220,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const location = useLocation();
   const {
     settings,
+    updateSettings,
     toggleTheme,
     stats,
     collections,
@@ -217,6 +231,10 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showDonateModal, setShowDonateModal] = useState(false);
+  const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
+  const [testSpeechText, setTestSpeechText] = useState("Hello, welcome to Memory Card!");
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
   const handleExportFile = () => {
@@ -225,7 +243,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `memocard-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `memcard-backup-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -255,23 +273,27 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
       <Header>
         <NavContainer>
           <BrandArea>
-            <LogoLink to="/">
-              <div className="logo-icon">
-                <IoFlashOutline />
-              </div>
-              <span className="logo-text">MEMOCARD</span>
+            <LogoLink to="/" title="MemCard - Trang chủ">
+              <MemCardLogo size={36} />
             </LogoLink>
 
             <NavLinks>
-              <NavItem to="/" active={location.pathname === "/"}>
+              <NavItem to="/" $active={location.pathname === "/"}>
                 Trang chủ
               </NavItem>
               <NavItem
                 to="/collections"
-                active={location.pathname.startsWith("/collections")}
+                $active={location.pathname.startsWith("/collections")}
               >
                 <IoFolderOpenOutline />
                 Bộ sưu tập ({collections.length})
+              </NavItem>
+              <NavItem
+                to="/apps"
+                $active={location.pathname.startsWith("/apps")}
+              >
+                <MdOutlineApps />
+                Ứng dụng liên quan
               </NavItem>
             </NavLinks>
           </BrandArea>
@@ -281,6 +303,36 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               <HiFire />
               <span>{stats.studyStreakDays} ngày</span>
             </StreakBadge>
+
+            <MyButton
+              variant="outline"
+              size="sm"
+              icon={<MdCloudQueue color="#3b82f6" />}
+              onClick={() => setShowGoogleDriveModal(true)}
+              title="Đồng bộ đám mây Google Drive"
+            >
+              Google Drive
+            </MyButton>
+
+            <MyButton
+              variant="primary"
+              size="sm"
+              icon={<IoCafeOutline />}
+              onClick={() => setShowDonateModal(true)}
+              title="Ủng hộ tác giả một tách cà phê (Buy Me a Coffee)"
+            >
+              Mời cà phê ☕
+            </MyButton>
+
+            <MyButton
+              variant="ghost"
+              size="sm"
+              icon={<MdVolumeUp />}
+              onClick={() => setShowVoiceModal(true)}
+              title="Cài đặt phát âm Text to Speech (Miễn phí)"
+            >
+              Giọng đọc
+            </MyButton>
 
             <MyButton
               variant="ghost"
@@ -450,6 +502,102 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               </div>
             </div>
           </BackupArea>
+        </MyModal>
+      )}
+
+      {/* VOICE & TTS SETTINGS MODAL */}
+      {showVoiceModal && (
+        <MyModal
+          title="Dịch vụ Text to Speech (Miễn phí 100%)"
+          onClose={() => setShowVoiceModal(false)}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: "10px",
+                background: "rgba(59, 130, 246, 0.1)",
+                color: "#1d4ed8",
+                fontSize: "13px",
+                lineHeight: "1.5"
+              }}
+            >
+              🎉 <strong>Hoàn toàn miễn phí & Không giới hạn:</strong> Ứng dụng tích hợp công nghệ kép kết hợp <strong>Web Speech API</strong> (chạy trực tiếp trên trình duyệt, không cần mạng, độ trễ 0ms) và <strong>Luồng âm thanh từ điển quốc tế</strong> dự phòng.
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
+                Tốc độ phát âm (Speed Rate)
+              </label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {[
+                  { label: "0.75x (Chậm)", val: 0.75 },
+                  { label: "0.95x (Tự nhiên)", val: 0.95 },
+                  { label: "1.15x (Nhanh)", val: 1.15 }
+                ].map((item) => (
+                  <MyButton
+                    key={item.val}
+                    variant={settings.speechRate === item.val ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => {
+                      updateSettings({ speechRate: item.val });
+                    }}
+                  >
+                    {item.label}
+                  </MyButton>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
+                Thử nghiệm phát âm trực tiếp
+              </label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <MyInput
+                  value={testSpeechText}
+                  onChange={(e) => setTestSpeechText(e.target.value)}
+                  placeholder="Nhập từ hoặc câu cần nghe thử..."
+                />
+                <MyButton
+                  variant="primary"
+                  icon={<MdVolumeUp />}
+                  onClick={() => speakWord(testSpeechText, undefined, settings.speechRate)}
+                  title="Phát âm thử"
+                >
+                  Phát âm
+                </MyButton>
+              </div>
+              <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                <MyButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setTestSpeechText("Asynchronous programming in JavaScript");
+                    speakWord("Asynchronous programming in JavaScript", "en-US", settings.speechRate);
+                  }}
+                >
+                  Thử: Tiếng Anh
+                </MyButton>
+                <MyButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setTestSpeechText("Xin chào! Chúc bạn học từ vựng hiệu quả.");
+                    speakWord("Xin chào! Chúc bạn học từ vựng hiệu quả.", "vi-VN", settings.speechRate);
+                  }}
+                >
+                  Thử: Tiếng Việt
+                </MyButton>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+              <MyButton variant="primary" onClick={() => setShowVoiceModal(false)}>
+                Đã hiểu & Đóng
+              </MyButton>
+            </div>
+          </div>
         </MyModal>
       )}
     </AppWrapper>

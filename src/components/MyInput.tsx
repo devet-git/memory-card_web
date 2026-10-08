@@ -3,17 +3,21 @@ import styled from "styled-components";
 interface MyInputProps {
   bgColor?: string;
   hasError?: boolean;
+  $bgColor?: string;
+  $hasError?: boolean;
 }
 
-export const MyInput = styled.input<MyInputProps>`
+export const MyInput = styled.input.withConfig({
+  shouldForwardProp: (prop) => !["hasError", "bgColor", "$hasError", "$bgColor"].includes(prop)
+})<MyInputProps>`
   font-size: 15px;
   font-family: inherit;
   font-weight: 500;
   padding: 10px 14px;
   width: 100%;
   border-radius: 8px;
-  border: 1px solid ${(props) => (props.hasError ? "#ef4444" : "var(--border-color, #cbd5e1)")};
-  background-color: ${(props) => props.bgColor || "var(--bg-secondary, #ffffff)"};
+  border: 1px solid ${(props) => (props.hasError || props.$hasError ? "#ef4444" : "var(--border-color, #cbd5e1)")};
+  background-color: ${(props) => props.$bgColor || props.bgColor || "var(--bg-secondary, #ffffff)"};
   color: var(--text-primary, #0f172a);
   transition: all 0.2s ease;
 
@@ -23,8 +27,8 @@ export const MyInput = styled.input<MyInputProps>`
   }
 
   &:focus {
-    border-color: ${(props) => (props.hasError ? "#ef4444" : "var(--border-focus, #3b82f6)")};
-    box-shadow: 0 0 0 3px ${(props) => (props.hasError ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)")};
+    border-color: ${(props) => (props.hasError || props.$hasError ? "#ef4444" : "var(--border-focus, #3b82f6)")};
+    box-shadow: 0 0 0 3px ${(props) => (props.hasError || props.$hasError ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)")};
   }
 
   &:disabled {
@@ -34,15 +38,17 @@ export const MyInput = styled.input<MyInputProps>`
   }
 `;
 
-export const MyTextarea = styled.textarea<MyInputProps>`
+export const MyTextarea = styled.textarea.withConfig({
+  shouldForwardProp: (prop) => !["hasError", "bgColor", "$hasError", "$bgColor"].includes(prop)
+})<MyInputProps>`
   font-size: 14px;
   font-family: inherit;
   font-weight: 400;
   padding: 10px 14px;
   width: 100%;
   border-radius: 8px;
-  border: 1px solid ${(props) => (props.hasError ? "#ef4444" : "var(--border-color, #cbd5e1)")};
-  background-color: ${(props) => props.bgColor || "var(--bg-secondary, #ffffff)"};
+  border: 1px solid ${(props) => (props.hasError || props.$hasError ? "#ef4444" : "var(--border-color, #cbd5e1)")};
+  background-color: ${(props) => props.$bgColor || props.bgColor || "var(--bg-secondary, #ffffff)"};
   color: var(--text-primary, #0f172a);
   transition: all 0.2s ease;
   resize: vertical;

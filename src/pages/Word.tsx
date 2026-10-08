@@ -14,7 +14,8 @@ import {
   MdOutlineSwapHoriz,
   MdCheck,
   MdClose,
-  MdOutlineLightbulb
+  MdOutlineLightbulb,
+  MdRestartAlt
 } from "react-icons/md";
 import { IoFlashOutline } from "react-icons/io5";
 import { AiFillStar, AiOutlineStar, AiOutlinePlus, AiOutlineDelete, AiOutlineEdit } from "react-icons/ai";
@@ -104,7 +105,7 @@ const ModeTabs = styled.div`
   overflow-x: auto;
 `;
 
-const ModeTab = styled.button<{ active: boolean }>`
+const ModeTab = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -113,9 +114,9 @@ const ModeTab = styled.button<{ active: boolean }>`
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  background-color: ${(props) => (props.active ? "var(--bg-card, #ffffff)" : "transparent")};
-  color: ${(props) => (props.active ? "var(--accent-primary, #3b82f6)" : "var(--text-secondary, #64748b)")};
-  box-shadow: ${(props) => (props.active ? "0 2px 6px rgba(0, 0, 0, 0.08)" : "none")};
+  background-color: ${(props) => (props.$active ? "var(--bg-card, #ffffff)" : "transparent")};
+  color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--text-secondary, #64748b)")};
+  box-shadow: ${(props) => (props.$active ? "0 2px 6px rgba(0, 0, 0, 0.08)" : "none")};
   transition: all 0.15s ease;
 
   &:hover {
@@ -128,8 +129,8 @@ const StudyWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  max-width: 680px;
+  gap: 24px;
+  max-width: 960px;
   margin: 0 auto;
   width: 100%;
 `;
@@ -140,7 +141,7 @@ const StudyToolBar = styled.div`
   align-items: center;
   width: 100%;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 `;
 
 const FilterChips = styled.div`
@@ -148,14 +149,14 @@ const FilterChips = styled.div`
   gap: 6px;
 `;
 
-const FilterChip = styled.button<{ active: boolean }>`
+const FilterChip = styled.button<{ $active: boolean }>`
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 9999px;
-  background: ${(props) => (props.active ? "#3b82f6" : "var(--bg-card, #ffffff)")};
-  color: ${(props) => (props.active ? "#ffffff" : "var(--text-secondary, #64748b)")};
-  border: 1px solid ${(props) => (props.active ? "#3b82f6" : "var(--border-color, #e2e8f0)")};
+  background: ${(props) => (props.$active ? "#3b82f6" : "var(--bg-card, #ffffff)")};
+  color: ${(props) => (props.$active ? "#ffffff" : "var(--text-secondary, #64748b)")};
+  border: 1px solid ${(props) => (props.$active ? "#3b82f6" : "var(--border-color, #e2e8f0)")};
   transition: all 0.15s ease;
 `;
 
@@ -164,33 +165,33 @@ const CardControlRow = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  gap: 12px;
+  gap: 16px;
 `;
 
 const NavigationCounter = styled.div`
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-secondary, #64748b);
 `;
 
 const RatingBar = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 14px;
   width: 100%;
   justify-content: center;
   margin-top: 8px;
 `;
 
-const RateButton = styled.button<{ color: string }>`
+const RateButton = styled.button<{ $color: string }>`
   flex: 1;
-  max-width: 180px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  max-width: 260px;
+  padding: 14px 18px;
+  border-radius: 14px;
   border: 1px solid var(--border-color, #e2e8f0);
   background: var(--bg-card, #ffffff);
   color: var(--text-primary, #0f172a);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -200,14 +201,14 @@ const RateButton = styled.button<{ color: string }>`
   transition: all 0.15s ease;
 
   .key-hint {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted, #94a3b8);
   }
 
   &:hover {
-    border-color: ${(props) => props.color};
-    color: ${(props) => props.color};
+    border-color: ${(props) => props.$color};
+    color: ${(props) => props.$color};
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
@@ -215,7 +216,7 @@ const RateButton = styled.button<{ color: string }>`
 
 /* QUIZ STYLES */
 const QuizContainer = styled.div`
-  max-width: 680px;
+  max-width: 960px;
   margin: 0 auto;
   width: 100%;
   display: flex;
@@ -227,16 +228,16 @@ const QuizCard = styled.div`
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 20px;
-  padding: 32px 28px;
+  padding: 36px 32px;
   box-shadow: var(--card-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.05));
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 16px;
+  gap: 20px;
 
   .quiz-q-label {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -244,7 +245,7 @@ const QuizCard = styled.div`
   }
 
   .quiz-term {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 800;
     color: var(--text-primary, #0f172a);
     margin: 0;
@@ -254,14 +255,18 @@ const QuizCard = styled.div`
 const QuizOptionsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
+
+  @media (min-width: 680px) {
+    grid-template-columns: 1fr 1fr;
+  }
 `;
 
 const OptionButton = styled.button<{
-  isSelected: boolean;
-  isCorrect?: boolean;
-  showResult: boolean;
+  $isSelected: boolean;
+  $isCorrect?: boolean;
+  $showResult: boolean;
 }>`
   padding: 16px 20px;
   border-radius: 12px;
@@ -278,15 +283,15 @@ const OptionButton = styled.button<{
   justify-content: space-between;
 
   ${(props) => {
-    if (props.showResult) {
-      if (props.isCorrect) {
+    if (props.$showResult) {
+      if (props.$isCorrect) {
         return `
           border-color: #10b981;
           background-color: rgba(16, 185, 129, 0.12);
           color: #059669;
         `;
       }
-      if (props.isSelected && !props.isCorrect) {
+      if (props.$isSelected && !props.$isCorrect) {
         return `
           border-color: #ef4444;
           background-color: rgba(239, 68, 68, 0.12);
@@ -294,7 +299,7 @@ const OptionButton = styled.button<{
         `;
       }
     }
-    if (props.isSelected) {
+    if (props.$isSelected) {
       return `
         border-color: #3b82f6;
         background-color: rgba(59, 130, 246, 0.08);
@@ -309,9 +314,139 @@ const OptionButton = styled.button<{
   }}
 `;
 
+const QuizProgressBar = styled.div`
+  width: 100%;
+  height: 6px;
+  background-color: var(--border-color, #e2e8f0);
+  border-radius: 9999px;
+  overflow: hidden;
+
+  .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+  }
+`;
+
+const QuizToolbar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+`;
+
+const QuizToolbarGroup = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const QuizPillButton = styled.button<{ $active?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid ${(props) => (props.$active ? "#3b82f6" : "var(--border-color, #e2e8f0)")};
+  background-color: ${(props) => (props.$active ? "rgba(59, 130, 246, 0.1)" : "var(--bg-card, #ffffff)")};
+  color: ${(props) => (props.$active ? "#2563eb" : "var(--text-secondary, #64748b)")};
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: #3b82f6;
+    color: #2563eb;
+  }
+`;
+
+const QuizInfoBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 9999px;
+`;
+
+const QuizExampleBox = styled.div`
+  width: 100%;
+  background-color: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-primary, #0f172a);
+  animation: fadeIn 0.2s ease;
+
+  .example-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2563eb;
+    margin-bottom: 4px;
+  }
+  .example-text {
+    font-style: italic;
+    color: var(--text-secondary, #475569);
+  }
+`;
+
+const QuizSummaryReview = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  text-align: left;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+`;
+
+const QuizReviewItem = styled.div<{ $isCorrect: boolean }>`
+  background: var(--bg-card, #ffffff);
+  border: 1px solid ${(props) => (props.$isCorrect ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)")};
+  border-left: 4px solid ${(props) => (props.$isCorrect ? "#10b981" : "#ef4444")};
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+
+  .review-prompt {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary, #0f172a);
+    margin-bottom: 4px;
+  }
+  .review-ans {
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+  }
+  .review-correct {
+    color: #059669;
+    font-weight: 600;
+  }
+  .review-wrong {
+    color: #dc2626;
+    text-decoration: line-through;
+    margin-right: 6px;
+  }
+`;
+
 /* TYPING PRACTICE STYLES */
 const TypingContainer = styled.div`
-  max-width: 600px;
+  max-width: 860px;
   margin: 0 auto;
   width: 100%;
   display: flex;
@@ -323,7 +458,7 @@ const TypingCard = styled.div`
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 20px;
-  padding: 32px 28px;
+  padding: 36px 32px;
   box-shadow: var(--card-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.05));
   display: flex;
   flex-direction: column;
@@ -334,8 +469,9 @@ const TypingCard = styled.div`
 /* GRID & TABLE VIEW STYLES */
 const WordGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  width: 100%;
 `;
 
 const TableWrapper = styled.div`
@@ -379,13 +515,13 @@ const CompletionCelebration = styled.div`
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 20px;
-  padding: 48px 32px;
+  padding: 48px 36px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  max-width: 520px;
+  max-width: 800px;
   margin: 0 auto;
   box-shadow: var(--card-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
 
@@ -464,6 +600,21 @@ export default function WordPage() {
   const [quizSelectedOption, setQuizSelectedOption] = useState<string | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [quizShuffleQuestions, setQuizShuffleQuestions] = useState(true);
+  const [quizReverseMode, setQuizReverseMode] = useState(false);
+  const [quizSessionId, setQuizSessionId] = useState(1);
+  const [retryOnlyWordIds, setRetryOnlyWordIds] = useState<Set<string | number> | null>(null);
+  const [quizHistory, setQuizHistory] = useState<
+    Array<{
+      questionId: string | number;
+      prompt: string;
+      phonetic?: string;
+      example?: string;
+      selectedOption: string;
+      correctAnswer: string;
+      isCorrect: boolean;
+    }>
+  >([]);
 
   // Typing practice state
   const [typingInput, setTypingInput] = useState("");
@@ -646,41 +797,162 @@ export default function WordPage() {
     setEditingWord(null);
   };
 
-  // QUIZ LOGIC
-  const currentQuizWord = words[quizIndex];
-  const quizOptions = useMemo(() => {
-    if (!currentQuizWord || words.length < 2) return [];
-    const correct = currentQuizWord.target;
-    const distractors = words
-      .filter((w) => w.id !== currentQuizWord.id)
-      .map((w) => w.target)
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
+  // FISHER-YATES SHUFFLE UTILITY
+  const shuffleArray = <T,>(items: T[]): T[] => {
+    const arr = [...items];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = temp;
+    }
+    return arr;
+  };
 
-    return [correct, ...distractors].sort(() => 0.5 - Math.random());
-  }, [currentQuizWord, words]);
+  // Active words pool for quiz (either all collection words, or only wrong ones during retry)
+  const activeQuizWords = useMemo(() => {
+    if (retryOnlyWordIds && retryOnlyWordIds.size > 0) {
+      const filtered = words.filter((w) => retryOnlyWordIds.has(w.id));
+      if (filtered.length > 0) return filtered;
+    }
+    return words;
+  }, [words, retryOnlyWordIds]);
+
+  // Robust Quiz Questions Generator: Always guarantees 4 distinct options randomly chosen from collection
+  const quizQuestions = useMemo(() => {
+    if (!activeQuizWords || activeQuizWords.length === 0) return [];
+
+    let pool = [...activeQuizWords];
+    if (quizShuffleQuestions) {
+      pool = shuffleArray(pool);
+    }
+
+    // All available answers in the current collection
+    const currentCollAnswers = words
+      .map((w) => (quizReverseMode ? w.source : w.target)?.trim())
+      .filter((txt): txt is string => Boolean(txt));
+
+    // Answers from all other collections as extra pool if current collection has < 4 words
+    const otherAnswers: string[] = [];
+    collections.forEach((c) => {
+      c.words?.forEach((w) => {
+        const txt = (quizReverseMode ? w.source : w.target)?.trim();
+        if (txt) otherAnswers.push(txt);
+      });
+    });
+
+    const standardFallbacks = [
+      "Chính xác, hoàn toàn đúng",
+      "Thay đổi và phát triển liên tục",
+      "Kết nối và đồng bộ hóa",
+      "Khởi tạo và thực thi nhiệm vụ",
+      "Tối ưu hóa hiệu năng và tốc độ",
+      "Ghi nhớ trong thời gian dài",
+      "Phương pháp tiếp cận hiệu quả",
+      "Dễ dàng thực hiện trong thực tế",
+      "Mục tiêu cần hoàn thành",
+      "Phân tích và đánh giá kết quả"
+    ];
+
+    return pool.map((word) => {
+      const prompt = (quizReverseMode ? word.target : word.source).trim();
+      const correctAnswer = (quizReverseMode ? word.source : word.target).trim();
+
+      // 1. Pick distractors from CURRENT collection first (all other words in this collection)
+      const collectionCandidates = currentCollAnswers.filter(
+        (ans) => ans.toLowerCase() !== correctAnswer.toLowerCase()
+      );
+      const uniqueCollectionCandidates = Array.from(new Set(collectionCandidates));
+      const shuffledCollectionCandidates = shuffleArray(uniqueCollectionCandidates);
+
+      const distractors: string[] = [];
+      for (const item of shuffledCollectionCandidates) {
+        if (distractors.length < 3 && !distractors.includes(item)) {
+          distractors.push(item);
+        }
+      }
+
+      // 2. If collection has fewer than 3 distractors, fill from other collections
+      if (distractors.length < 3) {
+        const otherCandidates = otherAnswers.filter(
+          (ans) => ans.toLowerCase() !== correctAnswer.toLowerCase() && !distractors.includes(ans)
+        );
+        const shuffledOthers = shuffleArray(Array.from(new Set(otherCandidates)));
+        for (const item of shuffledOthers) {
+          if (distractors.length < 3 && !distractors.includes(item)) {
+            distractors.push(item);
+          }
+        }
+      }
+
+      // 3. If still fewer than 3, fill from standard fallback educational answers
+      if (distractors.length < 3) {
+        const fallbackCandidates = standardFallbacks.filter(
+          (ans) => ans.toLowerCase() !== correctAnswer.toLowerCase() && !distractors.includes(ans)
+        );
+        const shuffledFallbacks = shuffleArray(fallbackCandidates);
+        for (const item of shuffledFallbacks) {
+          if (distractors.length < 3 && !distractors.includes(item)) {
+            distractors.push(item);
+          }
+        }
+      }
+
+      // Combine 1 correct answer + 3 distractors = guaranteed 4 total distinct options
+      const finalFour = shuffleArray([correctAnswer, ...distractors.slice(0, 3)]);
+
+      return {
+        id: word.id,
+        word,
+        prompt,
+        phonetic: word.phonetic,
+        example: word.example,
+        correctAnswer,
+        options: finalFour
+      };
+    });
+  }, [activeQuizWords, words, collections, quizReverseMode, quizShuffleQuestions, quizSessionId]);
+
+  const currentQuizQuestion = quizQuestions[quizIndex];
+  const quizOptions = currentQuizQuestion ? currentQuizQuestion.options : [];
 
   const handleSelectQuizOption = (option: string) => {
-    if (quizSubmitted) return;
+    if (quizSubmitted || !currentQuizQuestion) return;
     setQuizSelectedOption(option);
     setQuizSubmitted(true);
-    const isCorrect = option === currentQuizWord?.target;
+
+    const isCorrect = option.trim().toLowerCase() === currentQuizQuestion.correctAnswer.trim().toLowerCase();
+
+    // Record into quiz history
+    setQuizHistory((prev) => [
+      ...prev,
+      {
+        questionId: currentQuizQuestion.id,
+        prompt: currentQuizQuestion.prompt,
+        phonetic: currentQuizQuestion.phonetic,
+        example: currentQuizQuestion.example,
+        selectedOption: option,
+        correctAnswer: currentQuizQuestion.correctAnswer,
+        isCorrect
+      }
+    ]);
+
     if (isCorrect) {
       playSound("correct");
       setQuizScore((prev) => prev + 1);
-      if (collectionName && currentQuizWord) {
-        recordReview(collectionName, currentQuizWord.id, true);
+      if (collectionName) {
+        recordReview(collectionName, currentQuizQuestion.word.id, true);
       }
     } else {
       playSound("wrong");
-      if (collectionName && currentQuizWord) {
-        recordReview(collectionName, currentQuizWord.id, false);
+      if (collectionName) {
+        recordReview(collectionName, currentQuizQuestion.word.id, false);
       }
     }
   };
 
   const handleNextQuizQuestion = () => {
-    if (quizIndex < words.length - 1) {
+    if (quizIndex < quizQuestions.length - 1) {
       setQuizIndex((prev) => prev + 1);
       setQuizSelectedOption(null);
       setQuizSubmitted(false);
@@ -690,13 +962,72 @@ export default function WordPage() {
     }
   };
 
-  const handleRestartQuiz = () => {
+  const handleRestartQuiz = (keepSettings: boolean = true) => {
+    setRetryOnlyWordIds(null);
     setQuizIndex(0);
     setQuizScore(0);
     setQuizSelectedOption(null);
     setQuizSubmitted(false);
     setQuizFinished(false);
+    setQuizHistory([]);
+    setQuizSessionId((prev) => prev + 1);
   };
+
+  const handleRetryWrongQuestions = () => {
+    const wrongIds = new Set(
+      quizHistory.filter((h) => !h.isCorrect).map((h) => h.questionId)
+    );
+    if (wrongIds.size === 0) return;
+
+    setRetryOnlyWordIds(wrongIds);
+    setQuizIndex(0);
+    setQuizScore(0);
+    setQuizSelectedOption(null);
+    setQuizSubmitted(false);
+    setQuizFinished(false);
+    setQuizHistory([]);
+    setQuizSessionId((prev) => prev + 1);
+  };
+
+  // Keyboard shortcuts during quiz mode
+  useEffect(() => {
+    if (currentMode !== "quiz" || quizQuestions.length === 0 || quizFinished) return;
+
+    const handleQuizKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (!quizSubmitted) {
+        // Press 1 or A -> option 0
+        if (e.key === "1" || e.key === "a" || e.key === "A") {
+          e.preventDefault();
+          if (quizOptions[0]) handleSelectQuizOption(quizOptions[0]);
+        } else if (e.key === "2" || e.key === "b" || e.key === "B") {
+          e.preventDefault();
+          if (quizOptions[1]) handleSelectQuizOption(quizOptions[1]);
+        } else if (e.key === "3" || e.key === "c" || e.key === "C") {
+          e.preventDefault();
+          if (quizOptions[2]) handleSelectQuizOption(quizOptions[2]);
+        } else if (e.key === "4" || e.key === "d" || e.key === "D") {
+          e.preventDefault();
+          if (quizOptions[3]) handleSelectQuizOption(quizOptions[3]);
+        } else if (e.key === "r" || e.key === "R") {
+          e.preventDefault();
+          if (currentQuizQuestion) {
+            speakWord(currentQuizQuestion.prompt);
+          }
+        }
+      } else {
+        // After submitted, Enter or Space goes to next question
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleNextQuizQuestion();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleQuizKeyDown);
+    return () => window.removeEventListener("keydown", handleQuizKeyDown);
+  }, [currentMode, quizQuestions, quizFinished, quizSubmitted, quizOptions, currentQuizQuestion]);
 
   // TYPING LOGIC
   const currentTypingWord = words[typingIndex];
@@ -792,19 +1123,19 @@ export default function WordPage() {
 
         {/* STUDY MODE TABS */}
         <ModeTabs>
-          <ModeTab active={currentMode === "card"} onClick={() => setMode("card")}>
+          <ModeTab $active={currentMode === "card"} onClick={() => setMode("card")}>
             <IoFlashOutline /> Thẻ Flashcard
           </ModeTab>
-          <ModeTab active={currentMode === "quiz"} onClick={() => setMode("quiz")}>
+          <ModeTab $active={currentMode === "quiz"} onClick={() => setMode("quiz")}>
             <MdQuiz /> Trắc nghiệm ({words.length})
           </ModeTab>
-          <ModeTab active={currentMode === "typing"} onClick={() => setMode("typing")}>
+          <ModeTab $active={currentMode === "typing"} onClick={() => setMode("typing")}>
             <MdKeyboardAlt /> Gõ chính tả
           </ModeTab>
-          <ModeTab active={currentMode === "grid"} onClick={() => setMode("grid")}>
+          <ModeTab $active={currentMode === "grid"} onClick={() => setMode("grid")}>
             <MdViewModule /> Lưới thẻ
           </ModeTab>
-          <ModeTab active={currentMode === "table"} onClick={() => setMode("table")}>
+          <ModeTab $active={currentMode === "table"} onClick={() => setMode("table")}>
             <MdTableRows /> Quản lý danh sách
           </ModeTab>
         </ModeTabs>
@@ -856,19 +1187,19 @@ export default function WordPage() {
               <StudyToolBar>
                 <FilterChips>
                   <FilterChip
-                    active={filterType === "all"}
+                    $active={filterType === "all"}
                     onClick={() => setFilterType("all")}
                   >
                     Tất cả ({words.length})
                   </FilterChip>
                   <FilterChip
-                    active={filterType === "starred"}
+                    $active={filterType === "starred"}
                     onClick={() => setFilterType("starred")}
                   >
                     ⭐ Yêu thích ({words.filter((w) => w.starred).length})
                   </FilterChip>
                   <FilterChip
-                    active={filterType === "learning"}
+                    $active={filterType === "learning"}
                     onClick={() => setFilterType("learning")}
                   >
                     Cần ôn ({words.filter((w) => w.status !== "mastered").length})
@@ -920,7 +1251,7 @@ export default function WordPage() {
                     status={currentWord.status}
                     starred={currentWord.starred}
                     onToggleStar={() => toggleStar(selectedCollection.pathname, currentWord.id)}
-                    height="320px"
+                    height="clamp(330px, 46vh, 400px)"
                   />
                 </div>
               )}
@@ -952,7 +1283,7 @@ export default function WordPage() {
               {/* Spaced Repetition Rating Buttons */}
               <RatingBar>
                 <RateButton
-                  color="#ef4444"
+                  $color="#ef4444"
                   onClick={() => handleRateCard("learning")}
                   title="Bấm phím 1"
                 >
@@ -961,7 +1292,7 @@ export default function WordPage() {
                 </RateButton>
 
                 <RateButton
-                  color="#f59e0b"
+                  $color="#f59e0b"
                   onClick={() => handleRateCard("learning")}
                   title="Bấm phím 2"
                 >
@@ -970,7 +1301,7 @@ export default function WordPage() {
                 </RateButton>
 
                 <RateButton
-                  color="#10b981"
+                  $color="#10b981"
                   onClick={() => handleRateCard("mastered")}
                   title="Bấm phím 3"
                 >
@@ -986,10 +1317,10 @@ export default function WordPage() {
       {/* 2. QUIZ MODE */}
       {currentMode === "quiz" && (
         <QuizContainer>
-          {words.length < 2 ? (
+          {words.length === 0 ? (
             <CompletionCelebration>
-              <h3>Cần thêm từ để làm trắc nghiệm</h3>
-              <p>Chế độ trắc nghiệm cần tối thiểu 2 thẻ từ vựng để tạo các đáp án lựa chọn.</p>
+              <h3>Chưa có thẻ từ vựng</h3>
+              <p>Hãy thêm thẻ từ vựng để bắt đầu thử thách trắc nghiệm.</p>
               <MyButton variant="primary" onClick={() => setShowAddSingleModal(true)}>
                 Thêm từ vựng ngay
               </MyButton>
@@ -999,73 +1330,283 @@ export default function WordPage() {
               <div className="trophy">🎯</div>
               <h2>Hoàn thành bài trắc nghiệm!</h2>
               <p>
-                Kết quả của bạn: <strong>{quizScore} / {words.length} câu đúng</strong> ({Math.round((quizScore / words.length) * 100)}%)
+                Kết quả: <strong>{quizScore} / {quizQuestions.length} câu đúng</strong> ({Math.round((quizScore / quizQuestions.length) * 100) || 0}%)
               </p>
-              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                <MyButton variant="primary" onClick={handleRestartQuiz}>
-                  Làm lại bài thi
+              <div style={{ marginTop: "4px" }}>
+                {quizScore === quizQuestions.length ? (
+                  <QuizInfoBadge>🌟 Tuyệt đối 100%! Bạn đã làm chủ hoàn toàn các từ này!</QuizInfoBadge>
+                ) : quizScore >= Math.ceil(quizQuestions.length * 0.7) ? (
+                  <QuizInfoBadge>👏 Rất tốt! Bạn nhớ được hầu hết từ vựng!</QuizInfoBadge>
+                ) : (
+                  <span style={{ fontSize: "13px", color: "#f59e0b", fontWeight: 700 }}>
+                    💪 Hãy ôn tập thêm và thử lại nhé!
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+                <MyButton
+                  variant="primary"
+                  icon={<MdRestartAlt />}
+                  onClick={() => handleRestartQuiz(true)}
+                  title="Tạo bộ đề mới với 4 đáp án được xáo trộn ngẫu nhiên"
+                >
+                  Làm lại (Đề mới & 4 đáp án mới)
                 </MyButton>
+
+                {quizHistory.some((h) => !h.isCorrect) && (
+                  <MyButton
+                    variant="danger"
+                    onClick={handleRetryWrongQuestions}
+                    title="Chỉ thi lại những câu đã trả lời sai"
+                  >
+                    Luyện lại {quizHistory.filter((h) => !h.isCorrect).length} câu sai
+                  </MyButton>
+                )}
+
                 <MyButton variant="secondary" onClick={() => setMode("card")}>
                   Quay lại Flashcard
                 </MyButton>
               </div>
-            </CompletionCelebration>
-          ) : currentQuizWord ? (
-            <QuizCard>
-              <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                <span className="quiz-q-label">Câu hỏi {quizIndex + 1} / {words.length}</span>
-                <span style={{ fontSize: "13px", fontWeight: "700", color: "#10b981" }}>
-                  Điểm: {quizScore}
-                </span>
-              </div>
 
-              <div>
-                <h3 className="quiz-term">{currentQuizWord.source}</h3>
-                {currentQuizWord.phonetic && (
-                  <div style={{ color: "#3b82f6", fontSize: "15px", marginTop: "4px" }}>
-                    {currentQuizWord.phonetic}
+              {/* Detailed review of answers */}
+              {quizHistory.length > 0 && (
+                <div style={{ width: "100%", marginTop: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <h4 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
+                      Chi tiết đáp án từng câu ({quizHistory.length} câu):
+                    </h4>
+                    <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      {quizScore} đúng / {quizHistory.filter((h) => !h.isCorrect).length} sai
+                    </span>
                   </div>
-                )}
-                <div style={{ marginTop: "8px" }}>
-                  <MyButton
-                    variant="ghost"
-                    size="sm"
-                    icon={<MdVolumeUp />}
-                    onClick={() => speakWord(currentQuizWord.source)}
-                  >
-                    Nghe phát âm
-                  </MyButton>
-                </div>
-              </div>
 
-              <QuizOptionsGrid>
-                {quizOptions.map((option, idx) => {
-                  const isSelected = quizSelectedOption === option;
-                  const isCorrect = option === currentQuizWord.target;
-                  return (
-                    <OptionButton
-                      key={idx}
-                      isSelected={isSelected}
-                      isCorrect={isCorrect}
-                      showResult={quizSubmitted}
-                      onClick={() => handleSelectQuizOption(option)}
-                    >
-                      <span>{option}</span>
-                      {quizSubmitted && isCorrect && <MdCheck size={20} color="#10b981" />}
-                      {quizSubmitted && isSelected && !isCorrect && <MdClose size={20} color="#ef4444" />}
-                    </OptionButton>
-                  );
-                })}
-              </QuizOptionsGrid>
-
-              {quizSubmitted && (
-                <div style={{ width: "100%", display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-                  <MyButton variant="primary" size="lg" onClick={handleNextQuizQuestion}>
-                    {quizIndex < words.length - 1 ? "Câu tiếp theo →" : "Xem kết quả →"}
-                  </MyButton>
+                  <QuizSummaryReview>
+                    {quizHistory.map((item, idx) => (
+                      <QuizReviewItem key={idx} $isCorrect={item.isCorrect}>
+                        <div>
+                          <div className="review-prompt">
+                            Câu {idx + 1}: {item.prompt}
+                            {item.phonetic && (
+                              <span style={{ fontSize: "13px", fontWeight: 500, color: "#3b82f6", marginLeft: "8px" }}>
+                                {item.phonetic}
+                              </span>
+                            )}
+                          </div>
+                          <div className="review-ans">
+                            {item.isCorrect ? (
+                              <span className="review-correct">✓ Bạn chọn đúng: {item.correctAnswer}</span>
+                            ) : (
+                              <>
+                                <span className="review-wrong">✗ Bạn chọn: {item.selectedOption}</span>
+                                <span className="review-correct">✓ Đáp án đúng: {item.correctAnswer}</span>
+                              </>
+                            )}
+                          </div>
+                          {item.example && (
+                            <div style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic", marginTop: "4px" }}>
+                              💡 Ví dụ: {item.example}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          {item.isCorrect ? (
+                            <span style={{ color: "#10b981", fontWeight: 800, fontSize: "18px" }}>✓</span>
+                          ) : (
+                            <span style={{ color: "#ef4444", fontWeight: 800, fontSize: "18px" }}>✗</span>
+                          )}
+                        </div>
+                      </QuizReviewItem>
+                    ))}
+                  </QuizSummaryReview>
                 </div>
               )}
-            </QuizCard>
+            </CompletionCelebration>
+          ) : currentQuizQuestion ? (
+            <>
+              {/* Quiz Control Toolbar */}
+              <QuizToolbar>
+                <QuizToolbarGroup>
+                  <QuizPillButton
+                    $active={quizShuffleQuestions}
+                    onClick={() => {
+                      setQuizShuffleQuestions(!quizShuffleQuestions);
+                      setQuizSessionId((prev) => prev + 1);
+                    }}
+                    title="Bật/Tắt xáo trộn thứ tự các câu hỏi"
+                  >
+                    <MdOutlineShuffle /> {quizShuffleQuestions ? "Xáo câu: Bật" : "Xáo câu: Tắt"}
+                  </QuizPillButton>
+
+                  <QuizPillButton
+                    $active={quizReverseMode}
+                    onClick={() => {
+                      setQuizReverseMode(!quizReverseMode);
+                      setQuizSessionId((prev) => prev + 1);
+                    }}
+                    title="Đổi chiều câu hỏi (Hỏi từ chọn nghĩa hoặc hỏi nghĩa chọn từ)"
+                  >
+                    <MdOutlineSwapHoriz /> {quizReverseMode ? "Hỏi: Nghĩa ➔ Chọn: Từ" : "Hỏi: Từ ➔ Chọn: Nghĩa"}
+                  </QuizPillButton>
+
+                  {retryOnlyWordIds && (
+                    <QuizPillButton onClick={() => handleRestartQuiz(true)} title="Xem lại toàn bộ bộ từ">
+                      <MdRestartAlt /> Đang luyện lại câu sai (Hủy)
+                    </QuizPillButton>
+                  )}
+                </QuizToolbarGroup>
+
+                <QuizInfoBadge title="Hệ thống tự động lấy ngẫu nhiên 4 đáp án phân biệt từ các từ trong bộ sưu tập">
+                  🎲 4 đáp án ngẫu nhiên
+                </QuizInfoBadge>
+              </QuizToolbar>
+
+              {/* Progress bar */}
+              <QuizProgressBar>
+                <div
+                  className="fill"
+                  style={{
+                    width: `${Math.round(((quizIndex + (quizSubmitted ? 1 : 0)) / quizQuestions.length) * 100)}%`
+                  }}
+                />
+              </QuizProgressBar>
+
+              <QuizCard>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <span className="quiz-q-label">
+                    Câu hỏi {quizIndex + 1} / {quizQuestions.length}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#10b981" }}>
+                      Đúng: {quizScore} / {quizQuestions.length}
+                    </span>
+                    <button
+                      onClick={() => handleRestartQuiz(true)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text-secondary)",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "2px"
+                      }}
+                      title="Làm lại từ đầu"
+                    >
+                      <MdRestartAlt size={16} /> Làm lại
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="quiz-term">{currentQuizQuestion.prompt}</h3>
+                  {currentQuizQuestion.phonetic && (
+                    <div style={{ color: "#3b82f6", fontSize: "15px", marginTop: "4px", fontWeight: 600 }}>
+                      {currentQuizQuestion.phonetic}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "8px" }}>
+                    <MyButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<MdVolumeUp />}
+                      onClick={() => speakWord(currentQuizQuestion.prompt)}
+                      title="Bấm phím R để nghe lại phát âm"
+                    >
+                      Nghe phát âm (Phím R)
+                    </MyButton>
+                  </div>
+                </div>
+
+                {/* Always exactly 4 randomized options from collection */}
+                <QuizOptionsGrid>
+                  {quizOptions.map((option, idx) => {
+                    const isSelected = quizSelectedOption === option;
+                    const isCorrect = option.trim().toLowerCase() === currentQuizQuestion.correctAnswer.trim().toLowerCase();
+                    const letter = String.fromCharCode(65 + idx); // A, B, C, D
+                    const numberKey = idx + 1; // 1, 2, 3, 4
+
+                    return (
+                      <OptionButton
+                        key={`${quizIndex}-${idx}`}
+                        $isSelected={isSelected}
+                        $isCorrect={isCorrect}
+                        $showResult={quizSubmitted}
+                        onClick={() => handleSelectQuizOption(option)}
+                        disabled={quizSubmitted}
+                        title={`Bấm phím ${numberKey} hoặc ${letter}`}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span
+                            style={{
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "8px",
+                              background: isSelected
+                                ? "var(--accent-primary, #3b82f6)"
+                                : quizSubmitted && isCorrect
+                                ? "#10b981"
+                                : "var(--bg-tertiary, #f1f5f9)",
+                              color: isSelected || (quizSubmitted && isCorrect)
+                                ? "white"
+                                : "var(--text-secondary, #475569)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "13px",
+                              fontWeight: 800,
+                              flexShrink: 0
+                            }}
+                          >
+                            {letter}
+                          </span>
+                          <span style={{ fontSize: "15px" }}>{option}</span>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              color: "var(--text-muted, #94a3b8)",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background: "rgba(0,0,0,0.04)"
+                            }}
+                          >
+                            Phím {numberKey}
+                          </span>
+                          {quizSubmitted && isCorrect && <MdCheck size={22} color="#10b981" />}
+                          {quizSubmitted && isSelected && !isCorrect && <MdClose size={22} color="#ef4444" />}
+                        </div>
+                      </OptionButton>
+                    );
+                  })}
+                </QuizOptionsGrid>
+
+                {/* Explanation and Next question button */}
+                {quizSubmitted && (
+                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                    {currentQuizQuestion.example && (
+                      <QuizExampleBox>
+                        <div className="example-label">💡 Câu ví dụ ngữ cảnh:</div>
+                        <div className="example-text">{currentQuizQuestion.example}</div>
+                      </QuizExampleBox>
+                    )}
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                      <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        💡 Mẹo: Nhấn <strong>Enter</strong> hoặc <strong>Phím cách</strong> để sang câu tiếp theo
+                      </span>
+                      <MyButton variant="primary" size="lg" onClick={handleNextQuizQuestion}>
+                        {quizIndex < quizQuestions.length - 1 ? "Câu tiếp theo →" : "Xem kết quả →"}
+                      </MyButton>
+                    </div>
+                  </div>
+                )}
+              </QuizCard>
+            </>
           ) : null}
         </QuizContainer>
       )}

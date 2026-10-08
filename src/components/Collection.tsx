@@ -65,14 +65,14 @@ const CollectionLink = styled(Link)`
   }
 `;
 
-const CategoryTag = styled.span<{ color?: string }>`
+const CategoryTag = styled.span<{ $color?: string }>`
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 9999px;
-  background-color: ${(props) => (props.color ? `${props.color}15` : "rgba(59, 130, 246, 0.1)")};
-  color: ${(props) => props.color || "#2563eb"};
+  background-color: ${(props) => (props.$color ? `${props.$color}15` : "rgba(59, 130, 246, 0.1)")};
+  color: ${(props) => props.$color || "#2563eb"};
   margin-top: 6px;
 `;
 
@@ -112,8 +112,8 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const ProgressFill = styled.div<{ percent: number }>`
-  width: ${(props) => props.percent}%;
+const ProgressFill = styled.div<{ $percent: number }>`
+  width: ${(props) => props.$percent}%;
   height: 100%;
   background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
   border-radius: 9999px;
@@ -201,7 +201,7 @@ export default function Collection({ collection }: CollectionProps) {
                 {collection.name}
               </CollectionLink>
               <div>
-                <CategoryTag color={collection.color}>
+                <CategoryTag $color={collection.color}>
                   {collection.category || "Tổng hợp"} • {totalWords} thẻ
                 </CategoryTag>
               </div>
@@ -256,7 +256,7 @@ export default function Collection({ collection }: CollectionProps) {
           <span>{percentMastered}%</span>
         </ProgressInfo>
         <ProgressBar>
-          <ProgressFill percent={percentMastered} />
+          <ProgressFill $percent={percentMastered} />
         </ProgressBar>
       </ProgressBarWrapper>
 

@@ -24,12 +24,12 @@ const Backdrop = styled.div`
   }
 `;
 
-const ModalContent = styled.div<{ maxWidth?: string }>`
+const ModalContent = styled.div<{ $maxWidth?: string }>`
   background-color: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 14px;
   width: 100%;
-  max-width: ${(props) => props.maxWidth || "520px"};
+  max-width: ${(props) => props.$maxWidth || "520px"};
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -110,7 +110,7 @@ export default function MyModal({ title, children, onClose, maxWidth }: MyModalP
 
   return (
     <Backdrop onClick={onClose}>
-      <ModalContent maxWidth={maxWidth} onClick={(e) => e.stopPropagation()}>
+      <ModalContent $maxWidth={maxWidth} onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
           <h3>{title}</h3>
           <CloseButton onClick={onClose} title="Đóng (Esc)">

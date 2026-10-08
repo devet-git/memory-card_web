@@ -51,9 +51,9 @@ const HeroTitle = styled.h1`
 
 const HeroSubtitle = styled.p`
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #e0e7ff;
-  max-width: 640px;
+  max-width: 900px;
   margin: 0;
   opacity: 0.95;
 `;
@@ -67,8 +67,8 @@ const HeroActionRow = styled.div`
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
 `;
 
 const StatCard = styled.div`
@@ -144,8 +144,8 @@ const SectionHeader = styled.div`
 
 const DeckGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 22px;
 `;
 
 const DeckPreviewCard = styled.div`

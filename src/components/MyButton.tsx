@@ -3,16 +3,16 @@ import styled from "styled-components";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "outline" | "success";
 
-interface ButtonProps {
-  variant?: ButtonVariant;
-  bgColor?: string;
-  color?: string;
-  fontSz?: number;
-  size?: "sm" | "md" | "lg";
-  fullWidth?: boolean;
+interface StyledButtonProps {
+  $variant?: ButtonVariant;
+  $bgColor?: string;
+  $color?: string;
+  $fontSz?: number;
+  $size?: "sm" | "md" | "lg";
+  $fullWidth?: boolean;
 }
 
-const StyledButton = styled.button<ButtonProps>`
+const StyledButton = styled.button<StyledButtonProps>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25,10 +25,10 @@ const StyledButton = styled.button<ButtonProps>`
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   user-select: none;
-  width: ${(props) => (props.fullWidth ? "100%" : "auto")};
+  width: ${(props) => (props.$fullWidth ? "100%" : "auto")};
 
   ${(props) => {
-    switch (props.size) {
+    switch (props.$size) {
       case "sm":
         return `
           padding: 6px 12px;
@@ -48,10 +48,10 @@ const StyledButton = styled.button<ButtonProps>`
   }}
 
   ${(props) => {
-    if (props.bgColor) {
+    if (props.$bgColor) {
       return `
-        background-color: ${props.bgColor};
-        color: ${props.color || "white"};
+        background-color: ${props.$bgColor};
+        color: ${props.$color || "white"};
         &:hover {
           filter: brightness(0.92);
           transform: translateY(-1px);
@@ -59,7 +59,7 @@ const StyledButton = styled.button<ButtonProps>`
       `;
     }
 
-    switch (props.variant) {
+    switch (props.$variant) {
       case "primary":
         return `
           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -143,7 +143,7 @@ const StyledButton = styled.button<ButtonProps>`
   }
 
   svg {
-    font-size: ${(props) => (props.fontSz ? `${props.fontSz + 2}px` : "1.15em")};
+    font-size: ${(props) => (props.$fontSz ? `${props.$fontSz + 2}px` : "1.15em")};
     flex-shrink: 0;
   }
 `;
@@ -182,12 +182,12 @@ export default function MyButton({
   return (
     <StyledButton
       type={type}
-      variant={variant}
-      size={size}
-      fullWidth={fullWidth}
-      bgColor={bgColor}
-      color={color}
-      fontSz={fontSz}
+      $variant={variant}
+      $size={size}
+      $fullWidth={fullWidth}
+      $bgColor={bgColor}
+      $color={color}
+      $fontSz={fontSz}
       onClick={onClick}
       className={className}
       title={title}

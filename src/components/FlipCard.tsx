@@ -21,22 +21,22 @@ interface CardProps {
   showStatusActions?: boolean;
 }
 
-const CardContainer = styled.div<{ height?: string }>`
+const CardContainer = styled.div<{ $height?: string }>`
   perspective: 1200px;
   width: 100%;
-  height: ${(props) => props.height || "280px"};
+  height: ${(props) => props.$height || "280px"};
   min-height: 220px;
   cursor: pointer;
   user-select: none;
 `;
 
-const CardFlipper = styled.div<{ isFlipped: boolean }>`
+const CardFlipper = styled.div<{ $isFlipped: boolean }>`
   position: relative;
   width: 100%;
   height: 100%;
   transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
-  transform: ${(props) => (props.isFlipped ? "rotateY(180deg)" : "rotateY(0deg)")};
+  transform: ${(props) => (props.$isFlipped ? "rotateY(180deg)" : "rotateY(0deg)")};
 `;
 
 const CardSide = styled.div`
@@ -44,16 +44,20 @@ const CardSide = styled.div`
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 16px;
+  border-radius: 18px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 28px 32px;
   box-shadow: var(--card-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.05));
   border: 1px solid var(--border-color, #e2e8f0);
   background: var(--bg-card, #ffffff);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  @media (max-width: 640px) {
+    padding: 20px 16px;
+  }
 
   &:hover {
     box-shadow: var(--card-shadow-hover, 0 20px 30px -10px rgba(59, 130, 246, 0.15));
@@ -78,15 +82,15 @@ const CardTopBar = styled.div`
   margin-bottom: 12px;
 `;
 
-const SideBadge = styled.span<{ side: "front" | "back" }>`
+const SideBadge = styled.span<{ $side: "front" | "back" }>`
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 3px 8px;
   border-radius: 6px;
-  background-color: ${(props) => (props.side === "front" ? "rgba(59, 130, 246, 0.12)" : "rgba(139, 92, 246, 0.12)")};
-  color: ${(props) => (props.side === "front" ? "#2563eb" : "#7c3aed")};
+  background-color: ${(props) => (props.$side === "front" ? "rgba(59, 130, 246, 0.12)" : "rgba(139, 92, 246, 0.12)")};
+  color: ${(props) => (props.$side === "front" ? "#2563eb" : "#7c3aed")};
 `;
 
 const ActionButtons = styled.div`
@@ -95,12 +99,12 @@ const ActionButtons = styled.div`
   gap: 6px;
 `;
 
-const IconButton = styled.button<{ active?: boolean }>`
+const IconButton = styled.button<{ $active?: boolean }>`
   background: transparent;
   border: none;
   border-radius: 8px;
   padding: 6px;
-  color: ${(props) => (props.active ? "#f59e0b" : "var(--text-muted, #94a3b8)")};
+  color: ${(props) => (props.$active ? "#f59e0b" : "var(--text-muted, #94a3b8)")};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,7 +114,7 @@ const IconButton = styled.button<{ active?: boolean }>`
 
   &:hover {
     background-color: var(--bg-tertiary, #f1f5f9);
-    color: ${(props) => (props.active ? "#d97706" : "var(--text-primary, #0f172a)")};
+    color: ${(props) => (props.$active ? "#d97706" : "var(--text-primary, #0f172a)")};
     transform: scale(1.1);
   }
 `;
@@ -126,33 +130,37 @@ const CardMainContent = styled.div`
 `;
 
 const PrimaryText = styled.h2`
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   color: var(--text-primary, #0f172a);
-  margin: 0 0 8px 0;
-  line-height: 1.3;
+  margin: 0 0 10px 0;
+  line-height: 1.35;
   word-break: break-word;
 
   @media (max-width: 640px) {
-    font-size: 22px;
+    font-size: 24px;
   }
 `;
 
 const PhoneticText = styled.div`
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 17px;
+  font-weight: 600;
   color: #3b82f6;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-family: var(--font-main, sans-serif);
 `;
 
 const ExampleText = styled.p`
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-secondary, #475569);
   font-style: italic;
-  max-width: 90%;
-  margin: 6px 0 0 0;
-  line-height: 1.4;
+  max-width: 95%;
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+
+  @media (max-width: 640px) {
+    font-size: 14px;
+  }
 `;
 
 const CardBottomBar = styled.div`
@@ -185,13 +193,13 @@ const FlipHint = styled.div`
   }
 `;
 
-const StatusPill = styled.span<{ status?: MasteryStatus }>`
+const StatusPill = styled.span<{ $status?: MasteryStatus }>`
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 9999px;
   ${(props) => {
-    switch (props.status) {
+    switch (props.$status) {
       case "mastered":
         return `
           background-color: rgba(16, 185, 129, 0.15);
@@ -245,12 +253,12 @@ export default function FlipCard({
   };
 
   return (
-    <CardContainer height={height} onClick={handleCardClick} title="Nhấn để lật thẻ (hoặc bấm Space)">
-      <CardFlipper isFlipped={isFlipped}>
+    <CardContainer $height={height} onClick={handleCardClick} title="Nhấn để lật thẻ (hoặc bấm Space)">
+      <CardFlipper $isFlipped={isFlipped}>
         {/* FRONT SIDE */}
         <FrontSide>
           <CardTopBar>
-            <SideBadge side="front">Mặt trước (Từ / Câu hỏi)</SideBadge>
+            <SideBadge $side="front">Mặt trước (Từ / Câu hỏi)</SideBadge>
             <ActionButtons>
               <IconButton
                 onClick={(e) => handleSpeak(e, front)}
@@ -261,7 +269,7 @@ export default function FlipCard({
               </IconButton>
               {onToggleStar && (
                 <IconButton
-                  active={starred}
+                  $active={starred}
                   onClick={handleStar}
                   title={starred ? "Bỏ yêu thích" : "Yêu thích"}
                 >
@@ -277,7 +285,7 @@ export default function FlipCard({
           </CardMainContent>
 
           <CardBottomBar>
-            <StatusPill status={status}>{statusLabels[status]}</StatusPill>
+            <StatusPill $status={status}>{statusLabels[status]}</StatusPill>
             <FlipHint>
               <BiRefresh /> Nhấp để lật nghĩa
             </FlipHint>
@@ -287,7 +295,7 @@ export default function FlipCard({
         {/* BACK SIDE */}
         <BackSide>
           <CardTopBar>
-            <SideBadge side="back">Mặt sau (Định nghĩa)</SideBadge>
+            <SideBadge $side="back">Mặt sau (Định nghĩa)</SideBadge>
             <ActionButtons>
               <IconButton
                 onClick={(e) => handleSpeak(e, back)}
@@ -298,7 +306,7 @@ export default function FlipCard({
               </IconButton>
               {onToggleStar && (
                 <IconButton
-                  active={starred}
+                  $active={starred}
                   onClick={handleStar}
                   title={starred ? "Bỏ yêu thích" : "Yêu thích"}
                 >
@@ -314,7 +322,7 @@ export default function FlipCard({
           </CardMainContent>
 
           <CardBottomBar>
-            <StatusPill status={status}>{statusLabels[status]}</StatusPill>
+            <StatusPill $status={status}>{statusLabels[status]}</StatusPill>
             <FlipHint>
               <BiRefresh /> Nhấp để quay lại
             </FlipHint>

@@ -61,26 +61,32 @@ const CategoryTabs = styled.div`
   padding-bottom: 4px;
 `;
 
-const TabButton = styled.button<{ active: boolean }>`
+const TabButton = styled.button<{ $active: boolean }>`
   padding: 6px 14px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  background-color: ${(props) => (props.active ? "var(--accent-primary, #3b82f6)" : "var(--bg-card, #ffffff)")};
-  color: ${(props) => (props.active ? "#ffffff" : "var(--text-secondary, #475569)")};
-  border: 1px solid ${(props) => (props.active ? "var(--accent-primary, #3b82f6)" : "var(--border-color, #e2e8f0)")};
+  background-color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--bg-card, #ffffff)")};
+  color: ${(props) => (props.$active ? "#ffffff" : "var(--text-secondary, #475569)")};
+  border: 1px solid ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--border-color, #e2e8f0)")};
   transition: all 0.2s ease;
 
   &:hover {
     border-color: var(--accent-primary, #3b82f6);
-    color: ${(props) => (props.active ? "#ffffff" : "var(--accent-primary, #3b82f6)")};
+    color: ${(props) => (props.$active ? "#ffffff" : "var(--accent-primary, #3b82f6)")};
   }
 `;
 
 const CollectionsList = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -248,7 +254,7 @@ export default function CollectionPage() {
       {categories.length > 0 && (
         <CategoryTabs>
           <TabButton
-            active={selectedCategory === "ALL"}
+            $active={selectedCategory === "ALL"}
             onClick={() => setSelectedCategory("ALL")}
           >
             Tất cả ({collections.length})
@@ -256,7 +262,7 @@ export default function CollectionPage() {
           {categories.map((cat) => (
             <TabButton
               key={cat}
-              active={selectedCategory === cat}
+              $active={selectedCategory === cat}
               onClick={() => setSelectedCategory(cat)}
             >
               {cat}
