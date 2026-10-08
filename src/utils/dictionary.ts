@@ -3,6 +3,7 @@ export interface LookupResult {
   phonetic?: string;
   example?: string;
   translation?: string;
+  mnemonic?: string; // only filled by AI
 }
 
 async function fetchJson(url: string, timeoutMs = 8000): Promise<any> {

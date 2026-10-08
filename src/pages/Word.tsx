@@ -15,7 +15,8 @@ import {
   MdCheck,
   MdClose,
   MdOutlineLightbulb,
-  MdRestartAlt
+  MdRestartAlt,
+  MdAutoAwesome
 } from "react-icons/md";
 import { IoFlashOutline } from "react-icons/io5";
 import { AiFillStar, AiOutlineStar, AiOutlinePlus, AiOutlineDelete, AiOutlineEdit } from "react-icons/ai";
@@ -27,6 +28,10 @@ import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
 import AutoFillButton from "components/AutoFillButton";
+import AIEnrichButton from "components/ai/AIEnrichButton";
+import useAIConfig from "hooks/useAIConfig";
+import AIGenerateModal from "components/ai/AIGenerateModal";
+import SentencePractice from "components/study/SentencePractice";
 import Dictation from "components/study/Dictation";
 import Cloze from "components/study/Cloze";
 import Matching from "components/study/Matching";
@@ -38,7 +43,7 @@ import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
-type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "match" | "grid" | "table";
+type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "sentence" | "match" | "grid" | "table";
 
 const Container = styled.div`
   display: flex;
@@ -848,6 +853,7 @@ const CompletionCelebration = styled.div`
 
 export default function WordPage() {
   const { speak, isLoading: isSpeakLoading } = useSpeak();
+  const aiReady = Boolean(useAIConfig());
   const { collectionName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -872,6 +878,7 @@ export default function WordPage() {
   // Modals state
   const [showAddSingleModal, setShowAddSingleModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showAIGenerate, setShowAIGenerate] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWord, setEditingWord] = useState<WordItem | null>(null);
 
@@ -1430,6 +1437,22 @@ export default function WordPage() {
             >
               Thêm từ mới
             </MyButton>
+            {/* Dimmed until an API key is set; clicking then explains and offers to add one */}
+            <span style={{ opacity: aiReady ? 1 : 0.5, display: "inline-flex" }}>
+              <MyButton
+                variant="secondary"
+                size="sm"
+                icon={<MdAutoAwesome />}
+                onClick={() => setShowAIGenerate(true)}
+                title={
+                  aiReady
+                    ? "Dùng AI tạo thẻ từ chủ đề hoặc đoạn văn"
+                    : "Cần nhập API key AI để dùng tính năng này"
+                }
+              >
+                Tạo thẻ bằng AI{aiReady ? "" : " 🔒"}
+              </MyButton>
+            </span>
             <MyButton
               variant="secondary"
               size="sm"
@@ -1488,6 +1511,14 @@ export default function WordPage() {
           </ModeTab>
           <ModeTab $active={currentMode === "cloze"} onClick={() => setMode("cloze")}>
             <MdKeyboardAlt /> Điền từ
+          </ModeTab>
+          <ModeTab
+            $active={currentMode === "sentence"}
+            onClick={() => setMode("sentence")}
+            style={{ opacity: aiReady ? 1 : 0.5 }}
+            title={aiReady ? undefined : "Cần nhập API key AI để dùng tính năng này"}
+          >
+            <MdAutoAwesome /> Đặt câu (AI){aiReady ? "" : " 🔒"}
           </ModeTab>
           <ModeTab $active={currentMode === "match"} onClick={() => setMode("match")}>
             <MdViewModule /> Ghép cặp
@@ -2076,6 +2107,9 @@ export default function WordPage() {
       {currentMode === "cloze" && (
         <Cloze words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
+      {currentMode === "sentence" && (
+        <SentencePractice words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
+      )}
       {currentMode === "match" && (
         <Matching words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
@@ -2295,6 +2329,18 @@ export default function WordPage() {
                     if (r.example && !newExample.trim()) setNewExample(r.example);
                   }}
                 />
+                <div style={{ marginTop: 6 }}>
+                  <AIEnrichButton
+                    word={newSource}
+                    meaning={newTarget}
+                    onResult={(r: LookupResult) => {
+                      if (r.translation && !newTarget.trim()) setNewTarget(r.translation);
+                      if (r.phonetic && !newPhonetic.trim()) setNewPhonetic(r.phonetic);
+                      if (r.example && !newExample.trim()) setNewExample(r.example);
+                      if (r.mnemonic && !newMnemonic.trim()) setNewMnemonic(r.mnemonic);
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -2363,6 +2409,18 @@ export default function WordPage() {
             </div>
           </form>
         </MyModal>
+      )}
+
+      {showAIGenerate && (
+        <AIGenerateModal
+          existingSources={words.map((w) => w.source)}
+          onClose={() => setShowAIGenerate(false)}
+          onAdd={(list) => {
+            if (!collectionName) return;
+            // addWord prepends, so add in reverse to keep the AI's order
+            [...list].reverse().forEach((w) => addWord(collectionName, w));
+          }}
+        />
       )}
 
       {/* MODAL: BULK IMPORT WORDS */}
@@ -2453,6 +2511,25 @@ export default function WordPage() {
                     )
                   }
                 />
+                <div style={{ marginTop: 6 }}>
+                  <AIEnrichButton
+                    word={editingWord.source}
+                    meaning={editingWord.target}
+                    onResult={(r: LookupResult) =>
+                      setEditingWord((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              target: prev.target.trim() ? prev.target : r.translation || prev.target,
+                              phonetic: prev.phonetic?.trim() ? prev.phonetic : r.phonetic || prev.phonetic,
+                              example: prev.example?.trim() ? prev.example : r.example || prev.example,
+                              mnemonic: prev.mnemonic?.trim() ? prev.mnemonic : r.mnemonic || prev.mnemonic
+                            }
+                          : prev
+                      )
+                    }
+                  />
+                </div>
               </div>
             </div>
 

@@ -6,6 +6,9 @@ import useCollectionContext from "contexts/Collection";
 import useInstallPrompt from "hooks/useInstallPrompt";
 import { notificationsSupported } from "hooks/useReminder";
 import { getAccessToken } from "utils/googleDrive";
+import AISettingsModal from "components/AISettingsModal";
+import useAIConfig from "hooks/useAIConfig";
+import { AI_PROVIDERS } from "utils/ai";
 
 interface Props {
   onClose: () => void;
@@ -26,6 +29,8 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
   const { settings, updateSettings } = useCollectionContext();
   const { canInstall, installed, install } = useInstallPrompt();
   const [message, setMessage] = useState<string | null>(null);
+  const [showAISettings, setShowAISettings] = useState(false);
+  const aiConfig = useAIConfig();
 
   const permission = notificationsSupported() ? Notification.permission : "denied";
 
@@ -117,6 +122,16 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
           </Hint>
         </Row>
 
+        <Row>
+          <label style={{ fontWeight: 700, fontSize: 14 }}>Trợ lý AI (API key của bạn)</label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <MyButton variant={aiConfig ? "success" : "secondary"} size="sm" onClick={() => setShowAISettings(true)}>
+              {aiConfig ? `Đã kết nối: ${AI_PROVIDERS[aiConfig.provider].label}` : "Thêm API key"}
+            </MyButton>
+          </div>
+          <Hint>Dùng để tạo thẻ từ chủ đề, gợi ý nghĩa/ví dụ/mẹo nhớ và chấm câu bạn đặt. Key chỉ lưu trong trình duyệt này.</Hint>
+        </Row>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontWeight: 700, fontSize: 14 }}>Cài MemCard như ứng dụng</label>
           {installed ? (
@@ -135,6 +150,7 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
           )}
         </div>
       </div>
+      {showAISettings && <AISettingsModal onClose={() => setShowAISettings(false)} />}
     </MyModal>
   );
 }
