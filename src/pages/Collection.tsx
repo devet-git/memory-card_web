@@ -20,7 +20,7 @@ const Container = styled.div`
 
 const StickyActionWrapper = styled.div`
   position: sticky;
-  top: 64px;
+  top: 0;
   z-index: 80;
   background: var(--bg-primary, #f8fafc);
   padding: 4px 0 10px 0;
@@ -29,7 +29,7 @@ const StickyActionWrapper = styled.div`
   gap: 12px;
 
   @media (max-width: 768px) {
-    top: 56px;
+    top: 0;
     padding: 2px 0 8px 0;
     gap: 10px;
   }
@@ -229,7 +229,7 @@ export default function CollectionPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `memocard-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `memcard-backup-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

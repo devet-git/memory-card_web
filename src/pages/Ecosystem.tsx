@@ -148,7 +148,7 @@ const HeaderBanner = styled.div`
 
 const FilterTabRow = styled.div`
   position: sticky;
-  top: 64px;
+  top: 0;
   z-index: 80;
   background: var(--bg-primary, #f8fafc);
   padding: 8px 0;
@@ -163,7 +163,7 @@ const FilterTabRow = styled.div`
   }
 
   @media (max-width: 768px) {
-    top: 56px;
+    top: 0;
     padding: 6px 0;
   }
 `;

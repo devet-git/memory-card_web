@@ -6,6 +6,7 @@ export interface TTSOptions {
   rate?: number; // 0.5 to 1.5
   voiceURI?: string;
   forceOnline?: boolean;
+  onStart?: () => void; // fired when audio actually begins playing
 }
 
 let activeAudio: HTMLAudioElement | null = null;
@@ -41,7 +42,7 @@ export function getSystemVoices(): Promise<SpeechSynthesisVoice[]> {
 }
 
 // Online Free Audio Pronunciation Fallback
-export function playOnlineAudioTTS(text: string, lang = "en-US"): Promise<boolean> {
+export function playOnlineAudioTTS(text: string, lang = "en-US", onStart?: () => void): Promise<boolean> {
   return new Promise((resolve) => {
     try {
       if (activeAudio) {
@@ -65,6 +66,10 @@ export function playOnlineAudioTTS(text: string, lang = "en-US"): Promise<boolea
       const audio = new Audio(audioUrl);
       activeAudio = audio;
 
+      audio.onplaying = () => {
+        if (onStart) onStart();
+      };
+
       audio.onended = () => {
         resolve(true);
       };
@@ -82,80 +87,98 @@ export function playOnlineAudioTTS(text: string, lang = "en-US"): Promise<boolea
   });
 }
 
-// Main speakWord function
-export function speakWord(text: string, options?: TTSOptions | string, rateMultiplier = 1.0): void {
-  if (typeof window === "undefined" || !text || !text.trim()) return;
-
-  const cleanText = text.trim();
-
-  // Normalize options
-  let opts: TTSOptions = {};
-  if (typeof options === "string") {
-    opts = { lang: options, rate: rateMultiplier };
-  } else if (options) {
-    opts = options;
-  }
-
-  // Detect language if not specified:
-  // Check for Vietnamese diacritics
-  const hasVietnameseMarks = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i.test(cleanText);
-  const detectedLang = opts.lang || (hasVietnameseMarks ? "vi-VN" : "en-US");
-  const speechRate = opts.rate || 0.95;
-
-  // If force online requested
-  if (opts.forceOnline) {
-    playOnlineAudioTTS(cleanText, detectedLang);
-    return;
-  }
-
-  // Primary: Try native browser SpeechSynthesis
-  if ("speechSynthesis" in window) {
-    try {
-      window.speechSynthesis.cancel();
-
-      if (activeAudio) {
-        activeAudio.pause();
-        activeAudio = null;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = speechRate;
-      utterance.lang = detectedLang;
-
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
-        let selectedVoice: SpeechSynthesisVoice | undefined;
-
-        if (opts.voiceURI) {
-          selectedVoice = voices.find((v) => v.voiceURI === opts.voiceURI);
-        }
-
-        if (!selectedVoice) {
-          // Prefer natural/Google/Microsoft high quality voices for matching language
-          selectedVoice =
-            voices.find((v) => v.lang.toLowerCase().replace("_", "-") === detectedLang.toLowerCase() && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Premium"))) ||
-            voices.find((v) => v.lang.toLowerCase().startsWith(detectedLang.toLowerCase().substring(0, 2)));
-        }
-
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-      }
-
-      utterance.onerror = () => {
-        // Fallback to online stream if synthesis encounters error
-        playOnlineAudioTTS(cleanText, detectedLang);
-      };
-
-      window.speechSynthesis.speak(utterance);
+// Main speakWord function. Resolves when playback finishes (or fails / is interrupted).
+export function speakWord(text: string, options?: TTSOptions | string, rateMultiplier = 1.0): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (typeof window === "undefined" || !text || !text.trim()) {
+      resolve();
       return;
-    } catch {
-      // Fallback
     }
-  }
 
-  // Secondary fallback: Online Audio TTS stream
-  playOnlineAudioTTS(cleanText, detectedLang);
+    const cleanText = text.trim();
+
+    // Normalize options
+    let opts: TTSOptions = {};
+    if (typeof options === "string") {
+      opts = { lang: options, rate: rateMultiplier };
+    } else if (options) {
+      opts = options;
+    }
+
+    // Detect language if not specified:
+    // Check for Vietnamese diacritics
+    const hasVietnameseMarks = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i.test(cleanText);
+    const detectedLang = opts.lang || (hasVietnameseMarks ? "vi-VN" : "en-US");
+    const speechRate = opts.rate || 0.95;
+
+    const playOnline = () => {
+      playOnlineAudioTTS(cleanText, detectedLang, opts.onStart).then(() => resolve());
+    };
+
+    // If force online requested
+    if (opts.forceOnline) {
+      playOnline();
+      return;
+    }
+
+    // Primary: Try native browser SpeechSynthesis
+    if ("speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+
+        if (activeAudio) {
+          activeAudio.pause();
+          activeAudio = null;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = speechRate;
+        utterance.lang = detectedLang;
+
+        const voices = window.speechSynthesis.getVoices();
+        if (voices && voices.length > 0) {
+          let selectedVoice: SpeechSynthesisVoice | undefined;
+
+          if (opts.voiceURI) {
+            selectedVoice = voices.find((v) => v.voiceURI === opts.voiceURI);
+          }
+
+          if (!selectedVoice) {
+            // Prefer natural/Google/Microsoft high quality voices for matching language
+            selectedVoice =
+              voices.find((v) => v.lang.toLowerCase().replace("_", "-") === detectedLang.toLowerCase() && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Premium"))) ||
+              voices.find((v) => v.lang.toLowerCase().startsWith(detectedLang.toLowerCase().substring(0, 2)));
+          }
+
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+          }
+        }
+
+        utterance.onstart = () => {
+          if (opts.onStart) opts.onStart();
+        };
+        utterance.onend = () => resolve();
+        utterance.onerror = (e) => {
+          // A newer request cancelled this one: nothing to fall back to
+          if (e.error === "canceled" || e.error === "interrupted") {
+            resolve();
+            return;
+          }
+          // Fallback to online stream if synthesis encounters error
+          playOnline();
+        };
+
+        window.speechSynthesis.speak(utterance);
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+
+    // Secondary fallback: Online Audio TTS stream
+    playOnline();
+  });
 }
 
 // Stop any current playing speech

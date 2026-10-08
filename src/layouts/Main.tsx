@@ -19,7 +19,7 @@ import { HiFire } from "react-icons/hi";
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
 import MyModal from "components/MyModal";
-import { speakWord } from "utils/speech";
+import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { MyInput } from "components/MyInput";
 import MemCardLogo from "components/MemCardLogo";
 import DonateModal from "components/DonateModal";
@@ -37,8 +37,10 @@ const AppWrapper = styled.div`
   color: var(--text-primary, #0f172a);
 `;
 
-const Header = styled.header`
-  position: sticky;
+// Pages with their own sticky bar (collections, words, apps) scroll the header away
+// so the two sticky layers don't eat the content area.
+const Header = styled.header<{ $sticky: boolean }>`
+  position: ${(props) => (props.$sticky ? "sticky" : "relative")};
   top: 0;
   z-index: 1000;
   background-color: var(--bg-secondary, #ffffff);
@@ -457,6 +459,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
     resetToDefaultData
   } = useCollectionContext();
 
+  const { speak, isLoading: isSpeakLoading } = useSpeak();
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -464,7 +467,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
   const [showMobileMenuModal, setShowMobileMenuModal] = useState(false);
   const [showUtilitiesDropdown, setShowUtilitiesDropdown] = useState(false);
-  const [testSpeechText, setTestSpeechText] = useState("Hello, welcome to Memory Card!");
+  const [testSpeechText, setTestSpeechText] = useState("Hello, welcome to MemCard!");
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -515,7 +518,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
   return (
     <AppWrapper>
-      <Header>
+      <Header $sticky={location.pathname === "/"}>
         <NavContainer>
           <BrandArea>
             <LogoLink to="/" title="MemCard - Về trang chủ">
@@ -651,7 +654,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
       <Footer>
         <p>
-          MEMOCARD • Ứng dụng học từ vựng Flashcard ghi nhớ nhanh • Toàn bộ dữ liệu được lưu an toàn trực tiếp trên trình duyệt của bạn (Offline-ready)
+          MemCard • Ứng dụng học từ vựng Flashcard ghi nhớ nhanh • Toàn bộ dữ liệu được lưu an toàn trực tiếp trên trình duyệt của bạn (Offline-ready)
         </p>
       </Footer>
 
@@ -965,8 +968,8 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                 />
                 <MyButton
                   variant="primary"
-                  icon={<MdVolumeUp />}
-                  onClick={() => speakWord(testSpeechText, undefined, settings.speechRate)}
+                  icon={isSpeakLoading("test") ? <SpeakSpinner /> : <MdVolumeUp />}
+                  onClick={() => speak("test", testSpeechText, undefined, settings.speechRate)}
                   title="Phát âm thử"
                 >
                   Phát âm
@@ -978,7 +981,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                   size="sm"
                   onClick={() => {
                     setTestSpeechText("Asynchronous programming in JavaScript");
-                    speakWord("Asynchronous programming in JavaScript", "en-US", settings.speechRate);
+                    speak("test-en", "Asynchronous programming in JavaScript", "en-US", settings.speechRate);
                   }}
                 >
                   Thử: Tiếng Anh
@@ -988,7 +991,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                   size="sm"
                   onClick={() => {
                     setTestSpeechText("Xin chào! Chúc bạn học từ vựng hiệu quả.");
-                    speakWord("Xin chào! Chúc bạn học từ vựng hiệu quả.", "vi-VN", settings.speechRate);
+                    speak("test-vi", "Xin chào! Chúc bạn học từ vựng hiệu quả.", "vi-VN", settings.speechRate);
                   }}
                 >
                   Thử: Tiếng Việt

@@ -3,10 +3,26 @@ import initialCollections from "utils/mockData";
 import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from "types";
 import { removeAccent } from "utils/removeAccent";
 
-const STORAGE_DATA_KEY = "memocard_collections_v2";
+const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
-const STORAGE_STATS_KEY = "memocard_stats";
-const STORAGE_SETTINGS_KEY = "memocard_settings";
+const STORAGE_STATS_KEY = "memcard_stats";
+const STORAGE_SETTINGS_KEY = "memcard_settings";
+
+// One-time move of data saved under the old "memocard_*" keys
+(function migrateLegacyKeys() {
+  if (typeof window === "undefined") return;
+  try {
+    ["collections_v2", "stats", "settings"].forEach((suffix) => {
+      const oldKey = `memocard_${suffix}`;
+      const newKey = `memcard_${suffix}`;
+      const old = localStorage.getItem(oldKey);
+      if (old !== null && localStorage.getItem(newKey) === null) {
+        localStorage.setItem(newKey, old);
+      }
+      localStorage.removeItem(oldKey);
+    });
+  } catch (e) {}
+})();
 
 interface CollectionContextType {
   collections: CollectionItem[];

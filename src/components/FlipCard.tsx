@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { HiOutlineVolumeUp } from "react-icons/hi";
 import { AiFillStar, AiOutlineStar } from "react-icons/ai";
 import { BiRefresh } from "react-icons/bi";
-import { speakWord } from "utils/speech";
+import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { MasteryStatus } from "types";
 
@@ -280,9 +280,11 @@ export default function FlipCard({
     setIsFlipped(!isFlipped);
   };
 
-  const handleSpeak = (e: React.MouseEvent, text: string) => {
+  const { speak, isLoading } = useSpeak();
+
+  const handleSpeak = (e: React.MouseEvent, key: string, text: string) => {
     e.stopPropagation();
-    speakWord(text);
+    speak(key, text);
   };
 
   const handleStar = (e: React.MouseEvent) => {
@@ -306,11 +308,12 @@ export default function FlipCard({
             <ActionButtons>
               <IconButton
                 $compact={compact}
-                onClick={(e) => handleSpeak(e, front)}
+                onClick={(e) => handleSpeak(e, "front", front)}
+                aria-busy={isLoading("front")}
                 title="Nghe phát âm"
                 aria-label="Phát âm"
               >
-                <HiOutlineVolumeUp />
+                {isLoading("front") ? <SpeakSpinner /> : <HiOutlineVolumeUp />}
               </IconButton>
               {onToggleStar && (
                 <IconButton
@@ -347,11 +350,12 @@ export default function FlipCard({
             <ActionButtons>
               <IconButton
                 $compact={compact}
-                onClick={(e) => handleSpeak(e, back)}
+                onClick={(e) => handleSpeak(e, "back", back)}
+                aria-busy={isLoading("back")}
                 title="Nghe phát âm định nghĩa"
                 aria-label="Phát âm định nghĩa"
               >
-                <HiOutlineVolumeUp />
+                {isLoading("back") ? <SpeakSpinner /> : <HiOutlineVolumeUp />}
               </IconButton>
               {onToggleStar && (
                 <IconButton

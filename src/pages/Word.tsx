@@ -25,6 +25,7 @@ import MyButton from "components/MyButton";
 import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
+import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
@@ -38,7 +39,7 @@ const Container = styled.div`
 
 const PageHeader = styled.div`
   position: sticky;
-  top: 64px;
+  top: 0;
   z-index: 80;
   display: flex;
   flex-direction: column;
@@ -50,7 +51,7 @@ const PageHeader = styled.div`
   box-shadow: var(--card-shadow, 0 4px 12px -2px rgba(0, 0, 0, 0.06));
 
   @media (max-width: 768px) {
-    top: 56px;
+    top: 0;
     padding: 10px 12px;
     gap: 10px;
     border-radius: 14px;
@@ -837,6 +838,7 @@ const CompletionCelebration = styled.div`
 `;
 
 export default function WordPage() {
+  const { speak, isLoading: isSpeakLoading } = useSpeak();
   const { collectionName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -1800,8 +1802,8 @@ export default function WordPage() {
                     <MyButton
                       variant="ghost"
                       size="sm"
-                      icon={<MdVolumeUp />}
-                      onClick={() => speakWord(currentQuizQuestion.prompt)}
+                      icon={isSpeakLoading("quiz") ? <SpeakSpinner /> : <MdVolumeUp />}
+                      onClick={() => speak("quiz", currentQuizQuestion.prompt)}
                       title="Bấm phím R để nghe lại phát âm"
                     >
                       Nghe phát âm (Phím R)
@@ -2060,11 +2062,11 @@ export default function WordPage() {
                             </button>
                             <span>{word.source}</span>
                             <button
-                              onClick={() => speakWord(word.source)}
+                              onClick={() => speak(`word-${word.id}`, word.source)}
                               style={{ color: "#3b82f6", fontSize: "16px" }}
                               title="Nghe phát âm"
                             >
-                              <MdVolumeUp />
+                              {isSpeakLoading(`word-${word.id}`) ? <SpeakSpinner /> : <MdVolumeUp />}
                             </button>
                           </div>
                         </td>
@@ -2132,11 +2134,11 @@ export default function WordPage() {
                     </div>
 
                     <button
-                      onClick={() => speakWord(word.source)}
+                      onClick={() => speak(`word-${word.id}`, word.source)}
                       style={{ color: "#3b82f6", fontSize: "18px", background: "none", border: "none", padding: 0, cursor: "pointer" }}
                       title="Nghe phát âm"
                     >
-                      <MdVolumeUp />
+                      {isSpeakLoading(`word-${word.id}`) ? <SpeakSpinner /> : <MdVolumeUp />}
                     </button>
                   </div>
 
