@@ -1,0 +1,14 @@
+MemCard offline dictionary — data sources
+
+WordNet 3.1 (definitions, examples, parts of speech)
+  Copyright 2011 Princeton University. WordNet is freely usable under the WordNet License:
+  https://wordnet.princeton.edu/license-and-commercial-use
+
+CMU Pronouncing Dictionary (pronunciations, converted to IPA)
+  Copyright Carnegie Mellon University. Distributed under a BSD-style (ISC) license:
+  https://github.com/cmusphinx/cmudict
+
+FrequencyWords (word popularity rank; derived from OpenSubtitles)
+  https://github.com/hermitdave/FrequencyWords — Creative Commons CC-BY-SA 4.0
+
+Rebuild with: node scripts/build-dict.mjs

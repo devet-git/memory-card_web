@@ -13,17 +13,26 @@ interface Props {
 export default function AutoFillButton({ word, onResult }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const handleClick = async () => {
     if (loading || !word.trim()) return;
     setLoading(true);
     setError(null);
+    setNote(null);
     try {
       const result = await lookupWord(word);
       if (!result.phonetic && !result.example && !result.translation) {
         setError("Không tìm thấy dữ liệu cho từ này");
       } else {
-        onResult(result);
+        // No Vietnamese meaning (offline or unknown word): fall back to the English definition
+        if (!result.translation && result.definition) {
+          setNote("Chưa có nghĩa tiếng Việt — đã dùng định nghĩa tiếng Anh, bạn có thể sửa lại.");
+          onResult({ ...result, translation: result.definition });
+        } else {
+          if (result.baseForm) setNote(`Dạng biến đổi của "${result.baseForm}".`);
+          onResult(result);
+        }
       }
     } catch (err: any) {
       setError(err?.message || "Tra từ thất bại");
@@ -46,6 +55,7 @@ export default function AutoFillButton({ word, onResult }: Props) {
         {loading ? "Đang tra từ..." : "Tự điền từ điển"}
       </MyButton>
       {error && <span style={{ color: "#dc2626", fontSize: 12 }}>{error}</span>}
+      {note && <span style={{ color: "var(--text-secondary, #64748b)", fontSize: 12 }}>{note}</span>}
     </div>
   );
 }

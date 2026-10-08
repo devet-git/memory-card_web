@@ -72,6 +72,10 @@ const NavContainer = styled.div`
   justify-content: space-between;
   gap: 16px;
 
+  @media (max-height: 820px) {
+    height: 52px;
+  }
+
   @media (max-width: 768px) {
     height: 56px;
     gap: 8px;
@@ -265,17 +269,22 @@ const MainContent = styled.main`
   margin: 0 auto;
   padding: 24px 28px 60px 28px;
 
+  @media (max-height: 820px) {
+    padding-top: 12px;
+    padding-bottom: 36px;
+  }
+
   @media (max-width: 768px) {
-    padding: 16px 12px calc(80px + env(safe-area-inset-bottom, 0px)) 12px;
+    padding: 10px 10px calc(72px + env(safe-area-inset-bottom, 0px)) 10px;
   }
 `;
 
 const Footer = styled.footer`
   border-top: 1px solid var(--border-color, #e2e8f0);
   background-color: var(--bg-secondary, #ffffff);
-  padding: 20px;
+  padding: 14px 20px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-muted, #94a3b8);
 
   @media (max-width: 768px) {

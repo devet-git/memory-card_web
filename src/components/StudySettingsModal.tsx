@@ -142,6 +142,14 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
           <Hint>Dùng để tạo thẻ từ chủ đề, gợi ý nghĩa/ví dụ/mẹo nhớ và chấm câu bạn đặt. Key chỉ lưu trong trình duyệt này.</Hint>
         </Row>
 
+        <Row>
+          <label style={{ fontWeight: 700, fontSize: 14 }}>Từ điển offline</label>
+          <Hint>
+            Gợi ý từ, phiên âm và định nghĩa tiếng Anh cho ~41.000 từ phổ biến, không cần mạng hay AI. Dữ liệu từ WordNet (Princeton), CMU
+            Pronouncing Dictionary và FrequencyWords (CC BY-SA 4.0) — chi tiết tại <a href={`${process.env.PUBLIC_URL || ""}/dict/LICENSES.txt`} target="_blank" rel="noopener noreferrer">LICENSES.txt</a>.
+          </Hint>
+        </Row>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontWeight: 700, fontSize: 14 }}>Cài MemCard như ứng dụng</label>
           {installed ? (

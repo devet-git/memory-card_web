@@ -29,6 +29,9 @@ import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
 import AutoFillButton from "components/AutoFillButton";
+import ActionMenu from "components/ActionMenu";
+import WordSuggest from "components/WordSuggest";
+import SuggestWordsModal from "components/SuggestWordsModal";
 import AIEnrichButton from "components/ai/AIEnrichButton";
 import useAIConfig from "hooks/useAIConfig";
 import AIGenerateModal from "components/ai/AIGenerateModal";
@@ -51,28 +54,37 @@ type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "speaking"
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+
+  @media (max-width: 768px), (max-height: 820px) {
+    gap: 10px;
+  }
 `;
 
 const PageHeader = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 80;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 16px;
-  padding: 14px 20px;
+  border-radius: 14px;
+  padding: 10px 16px;
   box-shadow: var(--card-shadow, 0 4px 12px -2px rgba(0, 0, 0, 0.06));
 
   @media (max-width: 768px) {
-    top: 0;
-    padding: 10px 12px;
-    gap: 10px;
-    border-radius: 14px;
+    padding: 8px 10px;
+    border-radius: 12px;
   }
+`;
+
+// Only the mode tabs stay pinned while scrolling, so the pinned strip is one slim row
+const StickyTabs = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  margin: -6px 0;
+  padding: 6px 0;
+  background: var(--bg-primary, #f8fafc);
 `;
 
 const StickyStudyFooter = styled.div`
@@ -102,9 +114,13 @@ const HeaderTop = styled.div`
   gap: 12px;
 
   @media (max-width: 640px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    flex-wrap: nowrap;
+    gap: 8px;
+
+    /* phones: action buttons shrink to their icons */
+    .lbl {
+      display: none;
+    }
   }
 `;
 
@@ -112,15 +128,16 @@ const TitleArea = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 
   @media (max-width: 640px) {
-    gap: 10px;
+    gap: 8px;
   }
 
   .back-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -143,13 +160,14 @@ const TitleArea = styled.div`
   }
 
   h1 {
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 800;
     margin: 0;
     color: var(--text-primary, #0f172a);
+    overflow-wrap: anywhere;
 
     @media (max-width: 640px) {
-      font-size: 17px;
+      font-size: 16px;
     }
   }
 
@@ -169,7 +187,7 @@ const ModeTabs = styled.div`
   align-items: center;
   gap: 6px;
   background: var(--bg-tertiary, #f1f5f9);
-  padding: 4px;
+  padding: 3px;
   border-radius: 10px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -183,9 +201,9 @@ const ModeTab = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 5px 11px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   white-space: nowrap;
   background-color: ${(props) => (props.$active ? "var(--bg-card, #ffffff)" : "transparent")};
@@ -210,13 +228,13 @@ const StudyWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   max-width: 960px;
   margin: 0 auto;
   width: 100%;
 
-  @media (max-width: 640px) {
-    gap: 16px;
+  @media (max-width: 640px), (max-height: 820px) {
+    gap: 12px;
   }
 `;
 
@@ -883,6 +901,7 @@ export default function WordPage() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAIGenerate, setShowAIGenerate] = useState(false);
   const [showAIStory, setShowAIStory] = useState(false);
+  const [showSuggestWords, setShowSuggestWords] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWord, setEditingWord] = useState<WordItem | null>(null);
 
@@ -1444,96 +1463,75 @@ export default function WordPage() {
             <Link to="/collections" className="back-btn" title="Quay lại">
               <MdArrowBack />
             </Link>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <h1>{selectedCollection.name}</h1>
-                <span className="cat-badge">{selectedCollection.category || "Tổng hợp"}</span>
-              </div>
-              <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
-                {words.length} thẻ từ vựng • {words.filter((w) => w.status === "mastered").length} đã thành thạo
-              </p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "4px 10px", flexWrap: "wrap", minWidth: 0 }}>
+              <h1>{selectedCollection.name}</h1>
+              <span className="cat-badge">{selectedCollection.category || "Tổng hợp"}</span>
+              <span style={{ fontSize: "12.5px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                {words.length} thẻ • {words.filter((w) => w.status === "mastered").length} đã thạo
+              </span>
             </div>
           </TitleArea>
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
+            {shareMessage && <span style={{ fontSize: 12, color: "#059669" }}>{shareMessage}</span>}
             <MyButton
               variant="primary"
               size="sm"
               icon={<AiOutlinePlus />}
               onClick={() => setShowAddSingleModal(true)}
+              title="Thêm từ mới"
             >
-              Thêm từ mới
+              <span className="lbl">Thêm từ mới</span>
             </MyButton>
-            {/* Dimmed until an API key is set; clicking then explains and offers to add one */}
-            <span style={{ opacity: aiReady ? 1 : 0.5, display: "inline-flex" }}>
-              <MyButton
-                variant="secondary"
-                size="sm"
-                icon={<MdAutoAwesome />}
-                onClick={() => setShowAIGenerate(true)}
-                title={
-                  aiReady
-                    ? "Dùng AI tạo thẻ từ chủ đề hoặc đoạn văn"
-                    : "Cần nhập API key AI để dùng tính năng này"
+            <ActionMenu
+              items={[
+                { label: "Nhập hàng loạt / CSV / Anki", icon: <MdViewModule />, onClick: () => setShowBulkModal(true) },
+                { label: "Gợi ý từ phổ biến (offline)", icon: <MdOutlineLightbulb />, onClick: () => setShowSuggestWords(true) },
+                // Dimmed until an API key is set; clicking then explains and offers to add one
+                {
+                  label: `Tạo thẻ bằng AI${aiReady ? "" : " 🔒"}`,
+                  icon: <MdAutoAwesome />,
+                  dim: !aiReady,
+                  title: aiReady ? "Dùng AI tạo thẻ từ chủ đề hoặc đoạn văn" : "Cần nhập API key AI để dùng tính năng này",
+                  onClick: () => setShowAIGenerate(true)
+                },
+                {
+                  label: `Đoạn văn ôn từ${aiReady ? "" : " 🔒"}`,
+                  icon: <MdAutoAwesome />,
+                  dim: !aiReady,
+                  title: aiReady ? "AI viết đoạn văn dùng các từ bạn hay sai" : "Cần nhập API key AI để dùng tính năng này",
+                  onClick: () => setShowAIStory(true)
+                },
+                {
+                  label: "Xuất CSV",
+                  icon: <MdTableRows />,
+                  dividerBefore: true,
+                  onClick: () =>
+                    downloadTextFile(collectionToCsv(selectedCollection.words), `${safeFileName(selectedCollection)}.csv`, "text/csv;charset=utf-8")
+                },
+                {
+                  label: "Chia sẻ bộ thẻ (sao chép link)",
+                  icon: <MdOutlineSwapHoriz />,
+                  onClick: async () => {
+                    try {
+                      const url = await buildShareUrl(selectedCollection);
+                      await navigator.clipboard.writeText(url);
+                      setShareMessage("Đã sao chép liên kết chia sẻ!");
+                    } catch {
+                      setShareMessage("Không sao chép được liên kết, hãy thử lại.");
+                    }
+                    setTimeout(() => setShareMessage(null), 3000);
+                  }
                 }
-              >
-                Tạo thẻ bằng AI{aiReady ? "" : " 🔒"}
-              </MyButton>
-            </span>
-            <span style={{ opacity: aiReady ? 1 : 0.5, display: "inline-flex" }}>
-              <MyButton
-                variant="secondary"
-                size="sm"
-                icon={<MdAutoAwesome />}
-                onClick={() => setShowAIStory(true)}
-                title={aiReady ? "AI viết đoạn văn dùng các từ bạn hay sai" : "Cần nhập API key AI để dùng tính năng này"}
-              >
-                Đoạn văn ôn từ{aiReady ? "" : " 🔒"}
-              </MyButton>
-            </span>
-            <MyButton
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowBulkModal(true)}
-              title="Nhập nhiều từ cùng lúc từ văn bản"
-            >
-              Nhập hàng loạt
-            </MyButton>
-            <MyButton
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                downloadTextFile(
-                  collectionToCsv(selectedCollection.words),
-                  `${safeFileName(selectedCollection)}.csv`,
-                  "text/csv;charset=utf-8"
-                )
-              }
-              title="Xuất bộ thẻ ra CSV (mở được bằng Excel / Anki)"
-            >
-              Xuất CSV
-            </MyButton>
-            <MyButton
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                try {
-                  const url = await buildShareUrl(selectedCollection);
-                  await navigator.clipboard.writeText(url);
-                  setShareMessage("Đã sao chép liên kết chia sẻ!");
-                } catch {
-                  setShareMessage("Không sao chép được liên kết, hãy thử lại.");
-                }
-                setTimeout(() => setShareMessage(null), 3000);
-              }}
-              title="Sao chép liên kết để gửi bộ thẻ cho người khác"
-            >
-              {shareMessage || "Chia sẻ"}
-            </MyButton>
+              ]}
+            />
           </div>
         </HeaderTop>
 
-        {/* STUDY MODE TABS */}
+      </PageHeader>
+
+      {/* STUDY MODE TABS: the only sticky part of the header */}
+      <StickyTabs>
         <ModeTabs>
           <ModeTab $active={currentMode === "card"} onClick={() => setMode("card")}>
             <IoFlashOutline /> Thẻ Flashcard
@@ -1571,7 +1569,7 @@ export default function WordPage() {
             <MdTableRows /> Quản lý danh sách
           </ModeTab>
         </ModeTabs>
-      </PageHeader>
+      </StickyTabs>
 
       {/* 1. FLASHCARD MODE */}
       {currentMode === "card" && (
@@ -1686,7 +1684,7 @@ export default function WordPage() {
                     status={currentWord.status}
                     starred={currentWord.starred}
                     onToggleStar={() => toggleStar(selectedCollection.pathname, currentWord.id)}
-                    height="clamp(330px, 46vh, 400px)"
+                    height="clamp(220px, 44vh, 400px)"
                   />
                 </div>
               )}
@@ -2389,6 +2387,15 @@ export default function WordPage() {
                 onChange={(e) => setNewSource(e.target.value)}
                 autoFocus
               />
+              <WordSuggest
+                text={newSource}
+                onPick={(p) => {
+                  setNewSource(p.word);
+                  if (p.ipa && !newPhonetic.trim()) setNewPhonetic(p.ipa);
+                  if (p.example && !newExample.trim()) setNewExample(p.example);
+                  if (p.definition && !newTarget.trim()) setNewTarget(p.definition);
+                }}
+              />
               <div style={{ marginTop: 8 }}>
                 <AutoFillButton
                   word={newSource}
@@ -2492,6 +2499,16 @@ export default function WordPage() {
         />
       )}
 
+      {showSuggestWords && (
+        <SuggestWordsModal
+          existingSources={words.map((w) => w.source)}
+          onClose={() => setShowSuggestWords(false)}
+          onAdd={(list) => {
+            if (!collectionName) return;
+            [...list].reverse().forEach((w) => addWord(collectionName, w));
+          }}
+        />
+      )}
       {showAIStory && <AIStoryModal words={words} onClose={() => setShowAIStory(false)} />}
 
       {/* MODAL: BULK IMPORT WORDS */}
@@ -2565,6 +2582,22 @@ export default function WordPage() {
                 value={editingWord.source}
                 onChange={(e) => setEditingWord({ ...editingWord, source: e.target.value })}
                 autoFocus
+              />
+              <WordSuggest
+                text={editingWord.source}
+                onPick={(p) =>
+                  setEditingWord((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          source: p.word,
+                          phonetic: prev.phonetic?.trim() ? prev.phonetic : p.ipa || prev.phonetic,
+                          example: prev.example?.trim() ? prev.example : p.example || prev.example,
+                          target: prev.target.trim() ? prev.target : p.definition || prev.target
+                        }
+                      : prev
+                  )
+                }
               />
               <div style={{ marginTop: 8 }}>
                 <AutoFillButton

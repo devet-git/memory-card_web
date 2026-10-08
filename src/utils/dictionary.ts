@@ -1,9 +1,13 @@
+import { lookupBest, formatPos } from "utils/localDict";
+
 // Free lookups (no API key): dictionaryapi.dev for phonetic/example, MyMemory for Vietnamese meaning.
 export interface LookupResult {
   phonetic?: string;
   example?: string;
   translation?: string;
   mnemonic?: string; // only filled by AI
+  definition?: string; // English definition from the offline dictionary
+  baseForm?: string; // e.g. "go" for "went"
 }
 
 async function fetchJson(url: string, timeoutMs = 8000): Promise<any> {
@@ -48,18 +52,34 @@ async function translateToVietnamese(word: string): Promise<string | undefined> 
   return text.trim();
 }
 
-/** Looks up an English word. Each part fails independently; throws only if both fail. */
+/**
+ * Looks up an English word. The offline dictionary answers instantly (phonetic, English definition,
+ * example); online services add the Vietnamese meaning and fill any gaps. Throws only if nothing is found.
+ */
 export async function lookupWord(word: string): Promise<LookupResult> {
   const clean = word.trim();
   if (!clean) return {};
 
-  const [english, translation] = await Promise.allSettled([lookupEnglish(clean), translateToVietnamese(clean)]);
-  if (english.status === "rejected" && translation.status === "rejected") {
+  const [local, english, translation] = await Promise.allSettled([
+    lookupBest(clean),
+    lookupEnglish(clean),
+    translateToVietnamese(clean)
+  ]);
+
+  const offline = local.status === "fulfilled" ? local.value : null;
+  const online = english.status === "fulfilled" ? english.value : {};
+  const vi = translation.status === "fulfilled" ? translation.value : undefined;
+
+  const result: LookupResult = {
+    phonetic: offline?.ipa ? `/${offline.ipa}/` : online.phonetic,
+    example: offline?.example || online.example,
+    translation: vi,
+    definition: offline?.def ? `${offline.pos ? `(${formatPos(offline.pos)}) ` : ""}${offline.def}` : undefined,
+    baseForm: offline?.base
+  };
+
+  if (!result.phonetic && !result.example && !result.translation && !result.definition) {
     throw new Error("Không tra được từ này (kiểm tra kết nối mạng hoặc chính tả)");
   }
-
-  return {
-    ...(english.status === "fulfilled" ? english.value : {}),
-    translation: translation.status === "fulfilled" ? translation.value : undefined
-  };
+  return result;
 }
