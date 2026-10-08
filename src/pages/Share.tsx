@@ -4,6 +4,7 @@ import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
 import { PageContainer, Panel, MutedText } from "components/ui";
 import { decodeDeck, DecodedDeck } from "utils/share";
+import { CardLoader } from "components/Loader";
 
 export default function SharePage() {
   const { importSharedCollection } = useCollectionContext();
@@ -33,7 +34,7 @@ export default function SharePage() {
       <Panel>
         <h2>Nhận bộ thẻ được chia sẻ</h2>
         {error && <MutedText style={{ color: "#dc2626" }}>{error}</MutedText>}
-        {!error && !deck && <MutedText>Đang đọc liên kết...</MutedText>}
+        {!error && !deck && <CardLoader compact label="Đang đọc liên kết" />}
         {deck && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>

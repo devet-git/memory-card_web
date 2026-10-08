@@ -3,6 +3,7 @@ import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { MyInput } from "components/MyInput";
 import { SpeakSpinner, useSpeak } from "hooks/useSpeak";
+import { CardLoader } from "components/Loader";
 import RequireAI from "components/ai/RequireAI";
 import { AIConfig, askAIJson } from "utils/ai";
 import { WordItem } from "types";
@@ -142,6 +143,7 @@ function Writer({ config, words }: { config: AIConfig; words: WordItem[] }) {
       <div style={{ fontSize: 13 }}>
         <strong>Từ sẽ dùng:</strong> {chosen.map((w) => w.source).join(", ")}
       </div>
+      {loading && <CardLoader compact label="AI đang viết đoạn văn" />}
       {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <MyButton variant="primary" icon={loading ? <SpeakSpinner /> : undefined} onClick={generate} disabled={loading}>

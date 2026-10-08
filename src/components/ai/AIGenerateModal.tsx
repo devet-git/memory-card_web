@@ -3,6 +3,7 @@ import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { MyInput, MyTextarea } from "components/MyInput";
 import { SpeakSpinner } from "hooks/useSpeak";
+import { CardLoader } from "components/Loader";
 import RequireAI from "components/ai/RequireAI";
 import { AIConfig, askAIJson } from "utils/ai";
 import { WordItem } from "types";
@@ -112,6 +113,7 @@ function Generator({ config, existingSources, onAdd, onClose }: Props & { config
               </div>
             </div>
           </div>
+          {loading && <CardLoader compact label="AI đang soạn thẻ" />}
           {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <MyButton variant="ghost" onClick={onClose}>

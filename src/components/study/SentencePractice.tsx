@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import MyButton from "components/MyButton";
 import { SpeakSpinner } from "hooks/useSpeak";
+import { CardLoader } from "components/Loader";
 import RequireAI from "components/ai/RequireAI";
 import { AIConfig, askAIJson } from "utils/ai";
 import { StudyModeProps, ModeWrap, ModeCard, ModeMeta, Feedback, shuffled, useStableWords } from "./shared";
@@ -99,6 +100,7 @@ function Practice({ config, words: liveWords, onAnswer }: StudyModeProps & { con
           placeholder="Viết câu của bạn..."
           style={{ minHeight: 90, width: "100%" }}
         />
+        {loading && <CardLoader compact label="AI đang chấm câu của bạn" />}
         {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
         {verdict && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left", width: "100%" }}>

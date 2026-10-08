@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import MyButton from "components/MyButton";
+import { CardLoader } from "components/Loader";
 import { WordItem } from "types";
 import { baseFormSync, prefetch } from "utils/localDict";
 import { StudyModeProps, ModeWrap, ModeCard, ModeMeta, AnswerInput, Feedback, shuffled, normalizeAnswer, useStableWords } from "./shared";
@@ -102,7 +103,7 @@ export default function Cloze({ words: liveWords, onAnswer }: StudyModeProps) {
     setState("idle");
   };
 
-  if (items === null) return <ModeCard>Đang chuẩn bị câu hỏi...</ModeCard>;
+  if (items === null) return <ModeCard><CardLoader compact label="Đang chuẩn bị câu hỏi" /></ModeCard>;
 
   if (items.length === 0) {
     return (

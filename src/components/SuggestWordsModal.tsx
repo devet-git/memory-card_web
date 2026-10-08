@@ -3,6 +3,7 @@ import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { DictEntry, formatPos, loadTopWords } from "utils/localDict";
 import { WordItem } from "types";
+import { CardLoader } from "components/Loader";
 
 interface Props {
   existingSources: string[];
@@ -101,7 +102,7 @@ export default function SuggestWordsModal({ existingSources, onAdd, onClose }: P
           ))}
         </div>
 
-        {!top && <span style={{ fontSize: 13 }}>Đang tải từ điển...</span>}
+        {!top && <CardLoader compact label="Đang tải từ điển" />}
         {top && top.length === 0 && <span style={{ fontSize: 13, color: "#dc2626" }}>Không tải được từ điển offline.</span>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
