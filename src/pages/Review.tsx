@@ -8,6 +8,7 @@ import MyButton from "components/MyButton";
 import { PageContainer, Panel, MutedText } from "components/ui";
 import { Grade, isDue, isNewCard, previewInterval, NEW_CARDS_PER_SESSION } from "utils/srs";
 import { playSound } from "utils/sound";
+import { dateKey } from "utils/dates";
 import { WordItem } from "types";
 
 interface QueueItem {
@@ -191,7 +192,7 @@ export default function ReviewPage() {
 
   const total = queue.length;
   const goal = settings.dailyGoal || 20;
-  const today = stats.reviewLog?.[new Date().toISOString().split("T")[0]] || 0;
+  const today = stats.reviewLog?.[dateKey()] || 0;
 
   return (
     <PageContainer>

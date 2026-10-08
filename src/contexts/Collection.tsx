@@ -4,6 +4,7 @@ import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from 
 import { removeAccent } from "utils/removeAccent";
 import { schedule, Grade } from "utils/srs";
 import { mergeCollections, mergeStats } from "utils/merge";
+import { dateKey, daysAgoKey } from "utils/dates";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
@@ -57,7 +58,7 @@ interface CollectionContextType {
 
 const defaultStats: UserStats = {
   studyStreakDays: 1,
-  lastStudyDate: new Date().toISOString().split("T")[0],
+  lastStudyDate: dateKey(),
   totalCardsReviewed: 12,
   quizzesCompleted: 3
 };
@@ -190,7 +191,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
   // Update streak logic
   const checkAndUpdateStreak = useCallback(() => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = dateKey();
     setStats((prev) => {
       const reviewLog = { ...(prev.reviewLog || {}), [today]: ((prev.reviewLog || {})[today] || 0) + 1 };
       if (prev.lastStudyDate === today) {
@@ -200,7 +201,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
           totalCardsReviewed: prev.totalCardsReviewed + 1
         };
       }
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+      const yesterday = daysAgoKey(1);
       const isConsecutive = prev.lastStudyDate === yesterday;
       return {
         ...prev,
@@ -439,7 +440,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
   // Takes back the review counters of the last answer (used by "undo" in the review session)
   const undoReviewCount = useCallback(() => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = dateKey();
     setStats((prev) => {
       const log = { ...(prev.reviewLog || {}) };
       if (log[today]) log[today] = Math.max(0, log[today] - 1);

@@ -4,7 +4,7 @@ import styled from "styled-components";
 import useCollectionContext from "contexts/Collection";
 import ActivityHeatmap from "components/ActivityHeatmap";
 import { PageContainer, Panel, MutedText } from "components/ui";
-import { daysAgoKey } from "utils/dates";
+import { daysAgoKey, dayOfWeek } from "utils/dates";
 import { computeBadges } from "utils/badges";
 
 const Cols = styled.div`
@@ -117,7 +117,7 @@ export default function StatsPage() {
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const key = daysAgoKey(i);
-      days.push({ key, label: DAY_LABELS[new Date(key + "T00:00:00Z").getUTCDay()], count: log[key] || 0 });
+      days.push({ key, label: DAY_LABELS[dayOfWeek(key)], count: log[key] || 0 });
     }
     return days;
   }, [log]);

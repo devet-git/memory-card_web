@@ -1,3 +1,5 @@
+import { dateKey } from "utils/dates";
+
 // Save text content as a file. The anchor must be attached to the DOM and the blob URL
 // kept alive for a moment, otherwise some browsers drop the `download` name/extension
 // and save the file under a random name without ".json".
@@ -15,5 +17,5 @@ export function downloadTextFile(content: string, fileName: string, mimeType = "
 }
 
 export function backupFileName(): string {
-  return `memcard-backup-${new Date().toISOString().split("T")[0]}.json`;
+  return `memcard-backup-${dateKey()}.json`;
 }

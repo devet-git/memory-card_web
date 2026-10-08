@@ -56,7 +56,7 @@ interface Props {
 
 export default function ActivityHeatmap({ log = {}, goal, weeks = 18 }: Props) {
   // Columns are weeks starting on Sunday, so the first cell must land on a Sunday
-  const todayDow = new Date().getUTCDay();
+  const todayDow = new Date().getDay();
   const cells: { key: string; count: number }[] = [];
   for (let offset = todayDow + 7 * (weeks - 1); offset >= 0; offset--) {
     const key = daysAgoKey(offset);
