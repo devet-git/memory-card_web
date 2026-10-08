@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -912,7 +912,7 @@ export default function WordPage() {
   const [typingResult, setTypingResult] = useState<"idle" | "correct" | "wrong">("idle");
   const [showTypingHint, setShowTypingHint] = useState(false);
 
-  const words = selectedCollection?.words || [];
+  const words = useMemo(() => selectedCollection?.words || [], [selectedCollection]);
 
   // Filtered words for study
   const filteredWords = useMemo(() => {
@@ -1040,6 +1040,7 @@ export default function WordPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMode, displayWords, currentIndex, isCompletedSession, isReverseMode, handleNextCard, handlePrevCard, collectionName]);
 
   // Add Single Word
@@ -1201,6 +1202,8 @@ export default function WordPage() {
         options: finalFour
       };
     });
+    // quizSessionId is a deliberate re-shuffle trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeQuizWords, words, collections, quizReverseMode, quizShuffleQuestions, quizSessionId]);
 
   const currentQuizQuestion = quizQuestions[quizIndex];
@@ -1317,6 +1320,7 @@ export default function WordPage() {
 
     window.addEventListener("keydown", handleQuizKeyDown);
     return () => window.removeEventListener("keydown", handleQuizKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMode, quizQuestions, quizFinished, quizSubmitted, quizOptions, currentQuizQuestion]);
 
   // TYPING LOGIC

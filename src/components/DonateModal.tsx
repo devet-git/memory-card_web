@@ -3,15 +3,13 @@ import styled from "styled-components";
 import {
   MdContentCopy,
   MdCheck,
-  MdFavorite,
   MdSettings,
-  MdOutlineQrCodeScanner,
-  MdOutlineFileDownload
+  MdOutlineQrCodeScanner
 } from "react-icons/md";
-import { IoCafeOutline, IoHeart } from "react-icons/io5";
+import { IoHeart } from "react-icons/io5";
 import MyModal from "./MyModal";
 import MyButton from "./MyButton";
-import { MyInput, MyTextarea } from "./MyInput";
+import { MyInput } from "./MyInput";
 import MemCardLogo from "./MemCardLogo";
 
 const Container = styled.div`
@@ -263,7 +261,7 @@ interface DonateModalProps {
 
 export default function DonateModal({ onClose }: DonateModalProps) {
   const [selectedTier, setSelectedTier] = useState<number>(20000);
-  const [customAmount, setCustomAmount] = useState<string>("");
+  const [customAmount] = useState<string>("");
   const [isCustom, setIsCustom] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 

@@ -14,7 +14,7 @@ import {
   MdMoreHoriz,
   MdOutlineDashboardCustomize
 } from "react-icons/md";
-import { IoFlashOutline, IoFolderOpenOutline, IoCafeOutline, IoHomeOutline, IoSparklesOutline } from "react-icons/io5";
+import { IoFolderOpenOutline, IoCafeOutline, IoHomeOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
