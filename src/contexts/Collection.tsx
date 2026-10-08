@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import initialCollections from "utils/mockData";
 import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from "types";
 import { removeAccent } from "utils/removeAccent";
+import { schedule, Grade } from "utils/srs";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
@@ -40,7 +41,8 @@ interface CollectionContextType {
   updateWord: (collectionPathname: string, wordId: string | number, updatedWord: Partial<WordItem>) => boolean;
   deleteWord: (collectionPathname: string, wordId: string | number) => boolean;
   toggleStar: (collectionPathname: string, wordId: string | number) => void;
-  updateWordStatus: (collectionPathname: string, wordId: string | number, status: MasteryStatus) => void;
+  updateWordStatus: (collectionPathname: string, wordId: string | number, status: MasteryStatus, grade?: Grade) => void;
+  reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
   recordReview: (collectionPathname: string, wordId: string | number, isCorrect?: boolean) => void;
   bulkImportWords: (collectionPathname: string, text: string) => number;
   // Backup & Restore
@@ -60,7 +62,11 @@ const defaultSettings: AppSettings = {
   theme: "light",
   speechRate: 0.95,
   soundEffects: true,
-  autoPlayDelaySec: 4
+  autoPlayDelaySec: 4,
+  dailyGoal: 20,
+  reminderEnabled: false,
+  reminderTime: "20:00",
+  autoSync: false
 };
 
 const CollectionContext = createContext<CollectionContextType>({} as CollectionContextType);
@@ -127,7 +133,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   const [settings, setSettingsState] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SETTINGS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) {}
     return defaultSettings;
   });
@@ -181,9 +187,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   const checkAndUpdateStreak = useCallback(() => {
     const today = new Date().toISOString().split("T")[0];
     setStats((prev) => {
+      const reviewLog = { ...(prev.reviewLog || {}), [today]: ((prev.reviewLog || {})[today] || 0) + 1 };
       if (prev.lastStudyDate === today) {
         return {
           ...prev,
+          reviewLog,
           totalCardsReviewed: prev.totalCardsReviewed + 1
         };
       }
@@ -193,6 +201,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
         ...prev,
         studyStreakDays: isConsecutive ? prev.studyStreakDays + 1 : 1,
         lastStudyDate: today,
+        reviewLog,
         totalCardsReviewed: prev.totalCardsReviewed + 1
       };
     });
@@ -340,7 +349,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const updateWordStatus = useCallback(
-    (collectionPathname: string, wordId: string | number, status: MasteryStatus) => {
+    (collectionPathname: string, wordId: string | number, status: MasteryStatus, grade?: Grade) => {
       setCollections((prev) =>
         prev.map((coll) => {
           if (coll.pathname !== collectionPathname) return coll;
@@ -350,6 +359,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
               String(w.id) === String(wordId)
                 ? {
                     ...w,
+                    ...schedule(w, grade ?? (status === "mastered" ? 3 : 1)),
                     status,
                     reviewCount: (w.reviewCount || 0) + 1,
                     lastReviewed: Date.now()
@@ -382,11 +392,38 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
               }
               return {
                 ...w,
+                ...schedule(w, isCorrect ? 2 : 0),
                 reviewCount: count,
                 status: nextStatus,
                 lastReviewed: Date.now()
               };
             })
+          };
+        })
+      );
+      checkAndUpdateStreak();
+    },
+    [checkAndUpdateStreak]
+  );
+
+  // Spaced-repetition review: schedule the next due date from a 0-3 grade
+  const reviewWord = useCallback(
+    (collectionPathname: string, wordId: string | number, grade: Grade) => {
+      setCollections((prev) =>
+        prev.map((coll) => {
+          if (coll.pathname !== collectionPathname) return coll;
+          return {
+            ...coll,
+            words: coll.words.map((w) =>
+              String(w.id) === String(wordId)
+                ? {
+                    ...w,
+                    ...schedule(w, grade),
+                    reviewCount: (w.reviewCount || 0) + 1,
+                    lastReviewed: Date.now()
+                  }
+                : w
+            )
           };
         })
       );
@@ -527,6 +564,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     deleteWord,
     toggleStar,
     updateWordStatus,
+    reviewWord,
     recordReview,
     bulkImportWords,
     exportToJSON,

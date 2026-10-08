@@ -25,6 +25,7 @@ import MyButton from "components/MyButton";
 import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
+import { Grade } from "utils/srs";
 import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
@@ -991,10 +992,10 @@ export default function WordPage() {
     }
   }, [currentIndex]);
 
-  const handleRateCard = (status: MasteryStatus) => {
+  const handleRateCard = (status: MasteryStatus, grade?: Grade) => {
     const currentWord = displayWords[currentIndex];
     if (currentWord && collectionName) {
-      updateWordStatus(collectionName, currentWord.id, status);
+      updateWordStatus(collectionName, currentWord.id, status, grade);
       playSound(status === "mastered" ? "correct" : "click");
       handleNextCard();
     }
@@ -1022,13 +1023,13 @@ export default function WordPage() {
         }
       } else if (e.key === "1") {
         e.preventDefault();
-        handleRateCard("learning");
+        handleRateCard("learning", 0);
       } else if (e.key === "2") {
         e.preventDefault();
-        handleRateCard("learning");
+        handleRateCard("learning", 1);
       } else if (e.key === "3") {
         e.preventDefault();
-        handleRateCard("mastered");
+        handleRateCard("mastered", 3);
       } else if (e.key === "s" || e.key === "S") {
         e.preventDefault();
         const currentWord = displayWords[currentIndex];
@@ -1586,7 +1587,7 @@ export default function WordPage() {
                 <RatingBar>
                   <RateButton
                     $color="#ef4444"
-                    onClick={() => handleRateCard("learning")}
+                    onClick={() => handleRateCard("learning", 0)}
                     title="Bấm phím 1"
                   >
                     <span>Chưa nhớ</span>
@@ -1595,7 +1596,7 @@ export default function WordPage() {
 
                   <RateButton
                     $color="#f59e0b"
-                    onClick={() => handleRateCard("learning")}
+                    onClick={() => handleRateCard("learning", 1)}
                     title="Bấm phím 2"
                   >
                     <span>Đang học</span>
@@ -1604,7 +1605,7 @@ export default function WordPage() {
 
                   <RateButton
                     $color="#10b981"
-                    onClick={() => handleRateCard("mastered")}
+                    onClick={() => handleRateCard("mastered", 3)}
                     title="Bấm phím 3"
                   >
                     <span>Đã thuộc làu</span>

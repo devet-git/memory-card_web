@@ -11,6 +11,15 @@ export interface WordItem {
   status?: MasteryStatus; // 'new' | 'learning' | 'mastered'
   reviewCount?: number;
   lastReviewed?: number; // timestamp
+  // Spaced repetition
+  dueDate?: number; // timestamp when the card is next due
+  intervalDays?: number;
+  ease?: number;
+  lapses?: number;
+  wrongCount?: number; // times answered wrong (for "hard words")
+  // Memory aids
+  image?: string; // image URL
+  mnemonic?: string; // memory hint
 }
 
 export interface CollectionItem {
@@ -30,6 +39,7 @@ export interface UserStats {
   lastStudyDate: string; // 'YYYY-MM-DD'
   totalCardsReviewed: number;
   quizzesCompleted: number;
+  reviewLog?: Record<string, number>; // 'YYYY-MM-DD' -> cards reviewed that day
 }
 
 export interface AppSettings {
@@ -37,4 +47,8 @@ export interface AppSettings {
   speechRate: number; // 0.8 - 1.2
   soundEffects: boolean;
   autoPlayDelaySec: number;
+  dailyGoal?: number; // cards per day
+  reminderEnabled?: boolean;
+  reminderTime?: string; // 'HH:MM'
+  autoSync?: boolean; // auto upload to Google Drive
 }
