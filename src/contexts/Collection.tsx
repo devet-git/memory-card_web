@@ -44,6 +44,7 @@ interface CollectionContextType {
   toggleStar: (collectionPathname: string, wordId: string | number) => void;
   updateWordStatus: (collectionPathname: string, wordId: string | number, status: MasteryStatus, grade?: Grade) => void;
   reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
+  undoReviewCount: () => void;
   recordReview: (collectionPathname: string, wordId: string | number, isCorrect?: boolean) => void;
   bulkImportWords: (collectionPathname: string, text: string) => number;
   importSharedCollection: (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }) => string;
@@ -69,7 +70,8 @@ const defaultSettings: AppSettings = {
   dailyGoal: 20,
   reminderEnabled: false,
   reminderTime: "20:00",
-  autoSync: false
+  autoSync: false,
+  autoSpeak: false
 };
 
 const CollectionContext = createContext<CollectionContextType>({} as CollectionContextType);
@@ -435,6 +437,16 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     [checkAndUpdateStreak]
   );
 
+  // Takes back the review counters of the last answer (used by "undo" in the review session)
+  const undoReviewCount = useCallback(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setStats((prev) => {
+      const log = { ...(prev.reviewLog || {}) };
+      if (log[today]) log[today] = Math.max(0, log[today] - 1);
+      return { ...prev, reviewLog: log, totalCardsReviewed: Math.max(0, prev.totalCardsReviewed - 1) };
+    });
+  }, []);
+
   // Bulk Quick Import (reads "front - back" or "front : back" or "front | back" or tab-delimited)
   const bulkImportWords = useCallback((collectionPathname: string, text: string): number => {
     if (!text || !text.trim()) return 0;
@@ -613,6 +625,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     toggleStar,
     updateWordStatus,
     reviewWord,
+    undoReviewCount,
     recordReview,
     bulkImportWords,
     importSharedCollection,

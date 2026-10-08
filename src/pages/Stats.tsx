@@ -5,6 +5,7 @@ import useCollectionContext from "contexts/Collection";
 import ActivityHeatmap from "components/ActivityHeatmap";
 import { PageContainer, Panel, MutedText } from "components/ui";
 import { daysAgoKey } from "utils/dates";
+import { computeBadges } from "utils/badges";
 
 const Cols = styled.div`
   display: grid;
@@ -59,6 +60,38 @@ const HardRow = styled(Link)`
   }
 `;
 
+const BadgeGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+`;
+
+const BadgeCard = styled.div<{ $earned: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid ${(p) => (p.$earned ? "#f59e0b" : "var(--border-color, #e2e8f0)")};
+  background: ${(p) => (p.$earned ? "rgba(245, 158, 11, 0.1)" : "transparent")};
+  opacity: ${(p) => (p.$earned ? 1 : 0.5)};
+  filter: ${(p) => (p.$earned ? "none" : "grayscale(1)")};
+
+  .icon {
+    font-size: 28px;
+  }
+  .title {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .desc {
+    font-size: 11.5px;
+    color: var(--text-secondary, #64748b);
+  }
+`;
+
 const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 export default function StatsPage() {
@@ -99,6 +132,8 @@ export default function StatsPage() {
         .slice(0, 15),
     [words]
   );
+
+  const badges = useMemo(() => computeBadges(stats, collections), [stats, collections]);
 
   const pct = (n: number) => (counts.total ? Math.round((n / counts.total) * 100) : 0);
 
@@ -165,6 +200,21 @@ export default function StatsPage() {
         <MutedText style={{ marginTop: 8 }}>
           Đã thuộc {counts.mastered} • Đang học {counts.learning} • Chưa ôn {counts.fresh}
         </MutedText>
+      </Panel>
+
+      <Panel>
+        <h3>
+          Huy hiệu ({badges.filter((b) => b.earned).length}/{badges.length})
+        </h3>
+        <BadgeGrid>
+          {badges.map((b) => (
+            <BadgeCard key={b.id} $earned={b.earned} title={b.description}>
+              <span className="icon">{b.icon}</span>
+              <span className="title">{b.title}</span>
+              <span className="desc">{b.earned ? b.description : `${b.description} (${b.progress})`}</span>
+            </BadgeCard>
+          ))}
+        </BadgeGrid>
       </Panel>
 
       <Panel>

@@ -14,6 +14,7 @@ import MyButton from "./MyButton";
 import { MyInput } from "./MyInput";
 import useCollectionContext from "contexts/Collection";
 import { CollectionItem } from "types";
+import { isDue } from "utils/srs";
 
 const Card = styled.div`
   background: var(--bg-card, #ffffff);
@@ -184,6 +185,7 @@ export default function Collection({ collection }: CollectionProps) {
   const words = collection.words || [];
   const totalWords = words.length;
   const masteredWords = words.filter((w) => w.status === "mastered").length;
+  const dueCount = words.filter((w) => isDue(w)).length;
   const percentMastered = totalWords > 0 ? Math.round((masteredWords / totalWords) * 100) : 0;
 
   const handleSaveName = () => {
@@ -295,6 +297,17 @@ export default function Collection({ collection }: CollectionProps) {
       </ProgressBarWrapper>
 
       <StudyActions>
+        {dueCount > 0 && (
+          <MyButton
+            variant="success"
+            size="sm"
+            icon={<IoFlashOutline />}
+            onClick={() => navigate(`/review?deck=${collection.pathname}`)}
+            title="Ôn các thẻ đã đến hạn của bộ này"
+          >
+            Ôn {dueCount} thẻ đến hạn
+          </MyButton>
+        )}
         <MyButton
           variant="primary"
           size="sm"

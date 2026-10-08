@@ -14,7 +14,8 @@ import {
   MdMoreHoriz,
   MdOutlineDashboardCustomize,
   MdOutlineInsights,
-  MdOutlineSettings
+  MdOutlineSettings,
+  MdSearch
 } from "react-icons/md";
 import { IoFolderOpenOutline, IoCafeOutline, IoHomeOutline, IoFlashOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
@@ -29,6 +30,7 @@ import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
 import StudySettingsModal from "components/StudySettingsModal";
+import GlobalSearch from "components/GlobalSearch";
 import useAutoSync from "hooks/useAutoSync";
 import useReminder from "hooks/useReminder";
 
@@ -474,6 +476,19 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
   const [showStudySettings, setShowStudySettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Ctrl/Cmd+K opens card search from anywhere
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useAutoSync();
   useReminder();
@@ -558,6 +573,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           </BrandArea>
 
           <RightControls>
+            <MyButton
+              variant="ghost"
+              size="sm"
+              icon={<MdSearch />}
+              onClick={() => setShowSearch(true)}
+              title="Tìm thẻ (Ctrl+K)"
+            />
+
             <StreakBadge title="Chuỗi ngày ôn tập liên tục của bạn">
               <HiFire />
               <span>{stats.studyStreakDays} ngày</span>
@@ -1059,6 +1082,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
       {/* GOOGLE DRIVE MODAL */}
       {showGoogleDriveModal && <GoogleDriveModal onClose={() => setShowGoogleDriveModal(false)} />}
+      {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} />}
       {showStudySettings && (
         <StudySettingsModal
           onClose={() => setShowStudySettings(false)}

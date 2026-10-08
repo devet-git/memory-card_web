@@ -87,6 +87,16 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
         </Row>
 
         <Row>
+          <label style={{ fontWeight: 700, fontSize: 14 }}>Tự đọc từ khi hiện thẻ</label>
+          <div>
+            <MyButton variant={settings.autoSpeak ? "success" : "secondary"} size="sm" onClick={() => updateSettings({ autoSpeak: !settings.autoSpeak })}>
+              {settings.autoSpeak ? "Đang bật" : "Đang tắt"}
+            </MyButton>
+          </div>
+          <Hint>Phát âm mặt trước của thẻ ngay khi thẻ xuất hiện (flashcard và ôn tập hôm nay).</Hint>
+        </Row>
+
+        <Row>
           <label style={{ fontWeight: 700, fontSize: 14 }}>Nhắc học hằng ngày</label>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <MyButton variant={settings.reminderEnabled ? "success" : "secondary"} size="sm" onClick={toggleReminder}>

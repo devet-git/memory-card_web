@@ -106,6 +106,8 @@ const CloseButton = styled.button`
 const ModalBody = styled.div`
   padding: 20px;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
   color: var(--text-primary, #0f172a);
 
   @media (max-width: 640px) {
@@ -113,14 +115,27 @@ const ModalBody = styled.div`
   }
 `;
 
+// Stays pinned under the scrolling body (actions, status messages)
+const ModalFooter = styled.footer`
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background-color: var(--bg-secondary, #ffffff);
+
+  @media (max-width: 640px) {
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+`;
+
 interface MyModalProps {
   title?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   onClose: () => void;
   maxWidth?: string;
 }
 
-export default function MyModal({ title, children, onClose, maxWidth }: MyModalProps) {
+export default function MyModal({ title, children, footer, onClose, maxWidth }: MyModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -141,6 +156,7 @@ export default function MyModal({ title, children, onClose, maxWidth }: MyModalP
           </CloseButton>
         </ModalHeader>
         <ModalBody>{children}</ModalBody>
+        {footer && <ModalFooter>{footer}</ModalFooter>}
       </ModalContent>
     </Backdrop>
   );

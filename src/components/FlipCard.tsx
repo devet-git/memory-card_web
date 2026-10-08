@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { HiOutlineVolumeUp } from "react-icons/hi";
 import { AiFillStar, AiOutlineStar } from "react-icons/ai";
@@ -15,6 +15,9 @@ interface CardProps {
   notes?: string;
   image?: string;
   mnemonic?: string;
+  flipped?: boolean; // optional controlled flip state
+  onFlipChange?: (flipped: boolean) => void;
+  autoSpeak?: boolean; // read the front aloud when the card appears
   status?: MasteryStatus;
   starred?: boolean;
   onToggleStar?: () => void;
@@ -295,20 +298,33 @@ export default function FlipCard({
   example,
   image,
   mnemonic,
+  flipped,
+  onFlipChange,
+  autoSpeak = false,
   status = "new",
   starred = false,
   onToggleStar,
   height,
   compact = false,
 }: CardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const isFlipped = flipped ?? internalFlipped;
 
   const handleCardClick = () => {
     playSound("flip");
-    setIsFlipped(!isFlipped);
+    setInternalFlipped(!isFlipped);
+    if (onFlipChange) onFlipChange(!isFlipped);
   };
 
   const { speak, isLoading } = useSpeak();
+
+  // Read the front once when this card is shown (cards are remounted per word)
+  useEffect(() => {
+    if (!autoSpeak) return;
+    const t = setTimeout(() => speak("front", front), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSpeak, front]);
 
   const handleSpeak = (e: React.MouseEvent, key: string, text: string) => {
     e.stopPropagation();

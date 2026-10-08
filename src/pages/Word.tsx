@@ -16,7 +16,8 @@ import {
   MdClose,
   MdOutlineLightbulb,
   MdRestartAlt,
-  MdAutoAwesome
+  MdAutoAwesome,
+  MdMic
 } from "react-icons/md";
 import { IoFlashOutline } from "react-icons/io5";
 import { AiFillStar, AiOutlineStar, AiOutlinePlus, AiOutlineDelete, AiOutlineEdit } from "react-icons/ai";
@@ -32,6 +33,8 @@ import AIEnrichButton from "components/ai/AIEnrichButton";
 import useAIConfig from "hooks/useAIConfig";
 import AIGenerateModal from "components/ai/AIGenerateModal";
 import SentencePractice from "components/study/SentencePractice";
+import Speaking from "components/study/Speaking";
+import AIStoryModal from "components/ai/AIStoryModal";
 import Dictation from "components/study/Dictation";
 import Cloze from "components/study/Cloze";
 import Matching from "components/study/Matching";
@@ -43,7 +46,7 @@ import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
-type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "sentence" | "match" | "grid" | "table";
+type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "speaking" | "sentence" | "match" | "grid" | "table";
 
 const Container = styled.div`
   display: flex;
@@ -879,6 +882,7 @@ export default function WordPage() {
   const [showAddSingleModal, setShowAddSingleModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAIGenerate, setShowAIGenerate] = useState(false);
+  const [showAIStory, setShowAIStory] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWord, setEditingWord] = useState<WordItem | null>(null);
 
@@ -893,7 +897,7 @@ export default function WordPage() {
   const [bulkText, setBulkText] = useState("");
 
   // Search & filter
-  const [tableSearch, setTableSearch] = useState("");
+  const [tableSearch, setTableSearch] = useState(searchParams.get("q") || ""); // "q" comes from global search
   const [filterType, setFilterType] = useState<"all" | "starred" | "learning" | "mastered">("all");
 
   // Study card state
@@ -1124,6 +1128,29 @@ export default function WordPage() {
       arr[j] = temp;
     }
     return arr;
+  };
+
+  // Cards whose front repeats an earlier/better-studied card; "Xóa bản sao" removes these
+  const duplicateIds = useMemo(() => {
+    const groups = new Map<string, WordItem[]>();
+    words.forEach((w) => {
+      const key = w.source.trim().toLowerCase();
+      groups.set(key, [...(groups.get(key) || []), w]);
+    });
+    const ids: (string | number)[] = [];
+    groups.forEach((list) => {
+      if (list.length < 2) return;
+      // keep the card with the most reviews (first one on ties)
+      const keep = list.reduce((best, w) => ((w.reviewCount || 0) > (best.reviewCount || 0) ? w : best), list[0]);
+      list.forEach((w) => w !== keep && ids.push(w.id));
+    });
+    return ids;
+  }, [words]);
+
+  const handleRemoveDuplicates = () => {
+    if (!collectionName || duplicateIds.length === 0) return;
+    if (!window.confirm(`Xóa ${duplicateIds.length} thẻ trùng? Thẻ được ôn nhiều nhất của mỗi từ sẽ được giữ lại.`)) return;
+    duplicateIds.forEach((id) => deleteWord(collectionName, id));
   };
 
   // Active words pool for quiz (either all collection words, or only wrong ones during retry)
@@ -1453,6 +1480,17 @@ export default function WordPage() {
                 Tạo thẻ bằng AI{aiReady ? "" : " 🔒"}
               </MyButton>
             </span>
+            <span style={{ opacity: aiReady ? 1 : 0.5, display: "inline-flex" }}>
+              <MyButton
+                variant="secondary"
+                size="sm"
+                icon={<MdAutoAwesome />}
+                onClick={() => setShowAIStory(true)}
+                title={aiReady ? "AI viết đoạn văn dùng các từ bạn hay sai" : "Cần nhập API key AI để dùng tính năng này"}
+              >
+                Đoạn văn ôn từ{aiReady ? "" : " 🔒"}
+              </MyButton>
+            </span>
             <MyButton
               variant="secondary"
               size="sm"
@@ -1511,6 +1549,9 @@ export default function WordPage() {
           </ModeTab>
           <ModeTab $active={currentMode === "cloze"} onClick={() => setMode("cloze")}>
             <MdKeyboardAlt /> Điền từ
+          </ModeTab>
+          <ModeTab $active={currentMode === "speaking"} onClick={() => setMode("speaking")}>
+            <MdMic /> Luyện nói
           </ModeTab>
           <ModeTab
             $active={currentMode === "sentence"}
@@ -1638,6 +1679,7 @@ export default function WordPage() {
                     front={isReverseMode ? currentWord.target : currentWord.source}
                     back={isReverseMode ? currentWord.source : currentWord.target}
                     phonetic={isReverseMode ? undefined : currentWord.phonetic}
+                    autoSpeak={settings.autoSpeak && !isReverseMode}
                     example={currentWord.example}
                     image={currentWord.image}
                     mnemonic={currentWord.mnemonic}
@@ -2107,6 +2149,13 @@ export default function WordPage() {
       {currentMode === "cloze" && (
         <Cloze words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
+      {currentMode === "speaking" && (
+        <Speaking
+          words={words}
+          speechRate={settings.speechRate}
+          onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)}
+        />
+      )}
       {currentMode === "sentence" && (
         <SentencePractice words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
@@ -2146,6 +2195,26 @@ export default function WordPage() {
                 onChange={(e) => setTableSearch(e.target.value)}
               />
             </div>
+            {duplicateIds.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  padding: "6px 12px",
+                  borderRadius: 10,
+                  background: "rgba(245, 158, 11, 0.15)",
+                  color: "#b45309",
+                  fontSize: 13
+                }}
+              >
+                <span>Có {duplicateIds.length} thẻ trùng mặt trước</span>
+                <MyButton variant="outline" size="sm" onClick={handleRemoveDuplicates}>
+                  Xóa bản sao
+                </MyButton>
+              </div>
+            )}
             <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
               Hiển thị: {words.filter((w) => w.source.toLowerCase().includes(tableSearch.toLowerCase()) || w.target.toLowerCase().includes(tableSearch.toLowerCase())).length} / {words.length} thẻ
             </div>
@@ -2422,6 +2491,8 @@ export default function WordPage() {
           }}
         />
       )}
+
+      {showAIStory && <AIStoryModal words={words} onClose={() => setShowAIStory(false)} />}
 
       {/* MODAL: BULK IMPORT WORDS */}
       {showBulkModal && (

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
 import useCollectionContext from "contexts/Collection";
@@ -86,27 +86,33 @@ const GRADES: { grade: Grade; label: string; color: string; key: string }[] = [
 ];
 
 export default function ReviewPage() {
-  const { collections, reviewWord, stats, settings } = useCollectionContext();
+  const { collections, reviewWord, updateWord, undoReviewCount, stats, settings } = useCollectionContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const deckFilter = searchParams.get("deck");
+  const deckName = deckFilter ? collections.find((c) => c.pathname === deckFilter)?.name : undefined;
 
   const buildQueue = useCallback((): QueueItem[] => {
     const now = Date.now();
     const due: QueueItem[] = [];
     const fresh: QueueItem[] = [];
-    collections.forEach((c) =>
+    collections.forEach((c) => {
+      if (deckFilter && c.pathname !== deckFilter) return;
       c.words.forEach((w) => {
         if (isDue(w, now)) due.push({ pathname: c.pathname, wordId: w.id });
         else if (isNewCard(w)) fresh.push({ pathname: c.pathname, wordId: w.id });
-      })
-    );
+      });
+    });
     return [...due, ...fresh.slice(0, NEW_CARDS_PER_SESSION)];
-  }, [collections]);
+  }, [collections, deckFilter]);
 
   // The queue is frozen at session start; "Quên" cards are appended again at the end
   const [queue, setQueue] = useState<QueueItem[]>(buildQueue);
   const [position, setPosition] = useState(0);
   const [done, setDone] = useState(0);
   const [reveal, setReveal] = useState(0); // bump to remount the card
+  const [flipped, setFlipped] = useState(false);
+  const [history, setHistory] = useState<{ item: QueueItem; before: Partial<WordItem>; grade: Grade }[]>([]);
 
   const current = queue[position];
   const currentWord: WordItem | undefined = useMemo(() => {
@@ -117,6 +123,13 @@ export default function ReviewPage() {
   const rate = useCallback(
     (grade: Grade) => {
       if (!current) return;
+      // A focused rating button would otherwise re-fire on the Space key used to flip the next card
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      if (currentWord) {
+        // Remember the scheduling fields so the answer can be undone
+        const { dueDate, intervalDays, ease, lapses, wrongCount, status, reviewCount, lastReviewed } = currentWord;
+        setHistory((h) => [...h, { item: current, before: { dueDate, intervalDays, ease, lapses, wrongCount, status, reviewCount, lastReviewed }, grade }]);
+      }
       reviewWord(current.pathname, current.wordId, grade);
       playSound(grade >= 2 ? "correct" : "click");
       if (grade === 0) {
@@ -125,14 +138,38 @@ export default function ReviewPage() {
         setDone((d) => d + 1);
       }
       setPosition((p) => p + 1);
+      setFlipped(false);
       setReveal((r) => r + 1);
     },
-    [current, reviewWord]
+    [current, currentWord, reviewWord]
   );
+
+  const undo = useCallback(() => {
+    const last = history[history.length - 1];
+    if (!last) return;
+    updateWord(last.item.pathname, last.item.wordId, last.before);
+    undoReviewCount();
+    if (last.grade === 0) setQueue((q) => q.slice(0, -1));
+    else setDone((d) => Math.max(0, d - 1));
+    setPosition((p) => Math.max(0, p - 1));
+    setHistory((h) => h.slice(0, -1));
+    setFlipped(false);
+    setReveal((r) => r + 1);
+  }, [history, updateWord, undoReviewCount]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        setFlipped((f) => !f);
+        return;
+      }
+      if ((e.key === "z" || e.key === "Z" || e.key === "Backspace") && history.length > 0) {
+        e.preventDefault();
+        undo();
+        return;
+      }
       const item = GRADES.find((g) => g.key === e.key);
       if (item) {
         e.preventDefault();
@@ -141,12 +178,14 @@ export default function ReviewPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [rate]);
+  }, [rate, undo, history.length]);
 
   const restart = () => {
     setQueue(buildQueue());
     setPosition(0);
     setDone(0);
+    setHistory([]);
+    setFlipped(false);
     setReveal((r) => r + 1);
   };
 
@@ -157,7 +196,7 @@ export default function ReviewPage() {
   return (
     <PageContainer>
       <Panel>
-        <h2>Ôn tập hôm nay</h2>
+        <h2>Ôn tập hôm nay{deckName ? ` — ${deckName}` : ""}</h2>
         <MutedText>
           Thẻ đến hạn và thẻ mới được xếp lịch theo thuật toán lặp lại ngắt quãng. Hôm nay bạn đã ôn {today}/{goal} thẻ.
         </MutedText>
@@ -196,10 +235,14 @@ export default function ReviewPage() {
             example={currentWord.example}
             image={currentWord.image}
             mnemonic={currentWord.mnemonic}
+            flipped={flipped}
+            onFlipChange={setFlipped}
+            autoSpeak={settings.autoSpeak}
             status={currentWord.status}
             height="clamp(300px, 42vh, 380px)"
           />
 
+          <MutedText>Space/Enter: lật thẻ • 1-4: chấm điểm • Z: hoàn tác</MutedText>
           <RatingRow>
             {GRADES.map((g) => (
               <RateButton key={g.grade} $color={g.color} onClick={() => rate(g.grade)} title={`Phím ${g.key}`}>
@@ -208,6 +251,13 @@ export default function ReviewPage() {
               </RateButton>
             ))}
           </RatingRow>
+          {history.length > 0 && (
+            <div>
+              <MyButton variant="ghost" size="sm" onClick={undo} title="Phím Z">
+                ↶ Hoàn tác câu vừa chấm
+              </MyButton>
+            </div>
+          )}
         </>
       )}
     </PageContainer>

@@ -51,4 +51,5 @@ export interface AppSettings {
   reminderEnabled?: boolean;
   reminderTime?: string; // 'HH:MM'
   autoSync?: boolean; // auto upload to Google Drive
+  autoSpeak?: boolean; // read the front of a card aloud when it appears
 }
