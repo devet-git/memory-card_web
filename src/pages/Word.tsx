@@ -27,6 +27,9 @@ import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
 import AutoFillButton from "components/AutoFillButton";
+import Dictation from "components/study/Dictation";
+import Cloze from "components/study/Cloze";
+import Matching from "components/study/Matching";
 import { csvToBulkText, collectionToCsv, safeFileName } from "utils/csv";
 import { downloadTextFile } from "utils/download";
 import { buildShareUrl } from "utils/share";
@@ -35,7 +38,7 @@ import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
-type StudyMode = "card" | "quiz" | "typing" | "grid" | "table";
+type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "match" | "grid" | "table";
 
 const Container = styled.div`
   display: flex;
@@ -855,7 +858,8 @@ export default function WordPage() {
     toggleStar,
     updateWordStatus,
     recordReview,
-    bulkImportWords
+    bulkImportWords,
+    settings
   } = useCollectionContext();
 
   const currentMode = (searchParams.get("mode") as StudyMode) || "card";
@@ -1479,6 +1483,15 @@ export default function WordPage() {
           <ModeTab $active={currentMode === "typing"} onClick={() => setMode("typing")}>
             <MdKeyboardAlt /> Gõ chính tả
           </ModeTab>
+          <ModeTab $active={currentMode === "dictation"} onClick={() => setMode("dictation")}>
+            <MdVolumeUp /> Nghe chép
+          </ModeTab>
+          <ModeTab $active={currentMode === "cloze"} onClick={() => setMode("cloze")}>
+            <MdKeyboardAlt /> Điền từ
+          </ModeTab>
+          <ModeTab $active={currentMode === "match"} onClick={() => setMode("match")}>
+            <MdViewModule /> Ghép cặp
+          </ModeTab>
           <ModeTab $active={currentMode === "grid"} onClick={() => setMode("grid")}>
             <MdViewModule /> Lưới thẻ
           </ModeTab>
@@ -2053,6 +2066,20 @@ export default function WordPage() {
       )}
 
       {/* 4. GRID VIEW */}
+      {currentMode === "dictation" && (
+        <Dictation
+          words={words}
+          speechRate={settings.speechRate}
+          onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)}
+        />
+      )}
+      {currentMode === "cloze" && (
+        <Cloze words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
+      )}
+      {currentMode === "match" && (
+        <Matching words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
+      )}
+
       {currentMode === "grid" && (
         <WordGrid>
           {words.map((word) => (
