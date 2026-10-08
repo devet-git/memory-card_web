@@ -8,6 +8,7 @@ export interface LookupResult {
   mnemonic?: string; // only filled by AI
   definition?: string; // English definition from the offline dictionary
   baseForm?: string; // e.g. "go" for "went"
+  translationSource?: "offline" | "online";
 }
 
 async function fetchJson(url: string, timeoutMs = 8000): Promise<any> {
@@ -60,20 +61,21 @@ export async function lookupWord(word: string): Promise<LookupResult> {
   const clean = word.trim();
   if (!clean) return {};
 
-  const [local, english, translation] = await Promise.allSettled([
-    lookupBest(clean),
-    lookupEnglish(clean),
-    translateToVietnamese(clean)
+  // Offline first: instant, works without a network. Online services only fill what's missing.
+  const offline = await lookupBest(clean).catch(() => null);
+  const [english, translation] = await Promise.allSettled([
+    !offline || !offline.ipa || !offline.example ? lookupEnglish(clean) : Promise.resolve({}),
+    offline?.vi ? Promise.resolve(undefined) : translateToVietnamese(clean)
   ]);
 
-  const offline = local.status === "fulfilled" ? local.value : null;
-  const online = english.status === "fulfilled" ? english.value : {};
-  const vi = translation.status === "fulfilled" ? translation.value : undefined;
+  const online = english.status === "fulfilled" ? (english.value as { phonetic?: string; example?: string }) : {};
+  const onlineVi = translation.status === "fulfilled" ? translation.value : undefined;
 
   const result: LookupResult = {
     phonetic: offline?.ipa ? `/${offline.ipa}/` : online.phonetic,
     example: offline?.example || online.example,
-    translation: vi,
+    translation: offline?.vi || onlineVi,
+    translationSource: offline?.vi ? "offline" : onlineVi ? "online" : undefined,
     definition: offline?.def ? `${offline.pos ? `(${formatPos(offline.pos)}) ` : ""}${offline.def}` : undefined,
     baseForm: offline?.base
   };

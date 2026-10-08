@@ -8,8 +8,9 @@
  *   - WordNet 3.1 (npm: wordnet-db)             definitions, examples, part of speech
  *   - CMU Pronouncing Dictionary (npm)          pronunciation -> converted to IPA
  *   - FrequencyWords en_50k (GitHub)            popularity rank
+ *   - which-dialect-vi (npm; Wiktionary via Kaikki, CC BY-SA 4.0)   English -> Vietnamese meanings
  * Output (committed): public/dict/<2-letter prefix>.json shards, top.json, meta.json, LICENSES.txt
- * Each shard maps  word -> [ipa, pos, definition, example, rank, lemma]
+ * Each shard maps  word -> [ipa, pos, definition, example, rank, lemma, vietnamese]
  */
 import { execFileSync } from "node:child_process";
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, statSync, readdirSync } from "node:fs";
@@ -140,6 +141,52 @@ function splitGloss(g) {
 
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…");
 
+// ---------- English -> Vietnamese (Wiktionary via which-dialect-vi) ----------
+const POS_MAP = { noun: "n", verb: "v", adj: "a", adv: "r" };
+const WEAK_LABELS = new Set(["obsolete", "archaic", "rare", "dated", "dialectal", "slang", "vulgar", "offensive", "derogatory", "historical", "colloquial"]);
+
+function loadViEnglish(pkgDir) {
+  const dir = join(pkgDir, "data", "en");
+  const map = new Map();
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith(".json")) continue;
+    const data = JSON.parse(readFileSync(join(dir, f), "utf8"));
+    for (const [term, list] of Object.entries(data)) {
+      if (/^[a-z]{2,}$/.test(term)) map.set(term, list);
+    }
+  }
+  return map;
+}
+
+/** Picks up to 3 good Vietnamese equivalents for an English word, best first, as "a; b; c". */
+function pickVietnamese(term, candidates, posLetters) {
+  const t = term.toLowerCase();
+  const scored = candidates
+    .filter((c) => c.word && !/[\u4e00-\u9fff]/.test(c.word))
+    .map((c) => {
+      const g = (c.gloss || "").toLowerCase().replace(/^(to|a|an|the)\s+/, "");
+      // Everyday Vietnamese words (high frequency, many senses) beat literary or zodiac-style equivalents
+      let score = 0;
+      if (g === t) score += 3;
+      else if (new RegExp(`^${t}\\b`).test(g)) score += 2;
+      else if (new RegExp(`\\b${t}\\b`).test(g)) score += 0.5;
+      if (c.primary) score += 0.5;
+      score += 0.7 / (1 + (c.senseIndex || 0));
+      score += Math.min(c.frequency || 0, 7) * 0.6;
+      score += Math.min(c.senses || 0, 8) * 0.15;
+      if (posLetters.includes(POS_MAP[c.pos])) score += 1.2;
+      if ((c.labels || []).some((l) => WEAK_LABELS.has(l))) score -= 2;
+      return { word: c.word, score };
+    })
+    .sort((a, b) => b.score - a.score);
+  const out = [];
+  for (const s of scored) {
+    if (out.length >= 3) break;
+    if (!out.includes(s.word)) out.push(s.word);
+  }
+  return out.join("; ").slice(0, 70);
+}
+
 // ---------- lemmatizer (WordNet morphy rules + irregulars) ----------
 const IRREGULAR_VERBS = `be:am,is,are,was,were,been,being;have:has,had,having;do:does,did,done,doing;go:goes,went,gone,going;
 say:says,said;make:makes,made;get:gets,got,gotten,getting;know:knows,knew,known;think:thinks,thought;take:takes,took,taken,taking;
@@ -204,11 +251,13 @@ function makeLemmatizer(isWord) {
 console.log("Downloading sources…");
 const wnDir = join(await fetchNpm("wordnet-db"), "dict");
 const cmuPkg = await fetchNpm("cmu-pronouncing-dictionary");
+const viPkg = await fetchNpm("which-dialect-vi");
 await download(FREQ_URL, join(CACHE, "en_50k.txt"));
 
 console.log("Parsing…");
 const { dictionary: cmu } = await import(pathToFileURL(join(cmuPkg, "index.js")).href);
 const wn = parseWordNet(wnDir);
+const viEn = loadViEnglish(viPkg);
 const wnHas = (w) => Object.values(wn.index).some((m) => m.has(w));
 
 const freq = readFileSync(join(CACHE, "en_50k.txt"), "utf8").split("\n").map((l) => l.split(" ")[0]);
@@ -220,6 +269,13 @@ for (const w of freq) {
   if (!(w in cmu) && !wnHas(w)) continue;
   seen.add(w);
   vocab.push(w);
+}
+// Wiktionary has Vietnamese meanings for many words outside the top 50k: keep the real English ones (rank 0 = unranked)
+const frequentCount = vocab.length;
+for (const term of viEn.keys()) {
+  if (seen.has(term) || (!(term in cmu) && !wnHas(term))) continue;
+  seen.add(term);
+  vocab.push(term);
 }
 const isVocab = (w) => seen.has(w);
 const lemmatize = makeLemmatizer((w) => isVocab(w) && wnHas(w));
@@ -252,7 +308,9 @@ vocab.forEach((w, i) => {
     ex = clip(withWord || "", 100);
   }
   const lemma = lemmatize(w);
-  entries.set(w, [ipa, senses.map((s) => s.pos).join(""), def, ex, i + 1, lemma]);
+  const posLetters = senses.map((s) => s.pos).join("");
+  const vi = viEn.has(w) ? pickVietnamese(w, viEn.get(w), posLetters) : "";
+  entries.set(w, [ipa, posLetters, def, ex, i < frequentCount ? i + 1 : 0, lemma, vi]);
 });
 
 // ---------- write shards ----------
@@ -277,9 +335,9 @@ for (const [k, data] of shards) {
   rawBytes += Buffer.byteLength(json);
   gzBytes += gzipSync(json).length;
 }
-const top = vocab.slice(0, TOP_COUNT).map((w) => [w, ...entries.get(w)]);
+const top = vocab.slice(0, Math.min(TOP_COUNT, frequentCount)).map((w) => [w, ...entries.get(w)]);
 writeFileSync(join(OUT, "top.json"), JSON.stringify(top));
-writeFileSync(join(OUT, "meta.json"), JSON.stringify({ version: 1, words: vocab.length, shards: [...shards.keys()].sort() }));
+writeFileSync(join(OUT, "meta.json"), JSON.stringify({ version: 2, words: vocab.length, shards: [...shards.keys()].sort() }));
 writeFileSync(
   join(OUT, "LICENSES.txt"),
   `MemCard offline dictionary — data sources
@@ -294,6 +352,12 @@ CMU Pronouncing Dictionary (pronunciations, converted to IPA)
 
 FrequencyWords (word popularity rank; derived from OpenSubtitles)
   https://github.com/hermitdave/FrequencyWords — Creative Commons CC-BY-SA 4.0
+
+Vietnamese meanings: Wiktionary (https://en.wiktionary.org/) extracted by Kaikki.org (wiktextract),
+  reshaped by the which-dialect-vi package (https://github.com/nguyen18/which-dialect), with word frequencies
+  from wordfreq (Robyn Speer, CC BY-SA 4.0). Licensed under Creative Commons CC BY-SA 4.0
+  (https://creativecommons.org/licenses/by-sa/4.0/). This data was filtered, re-indexed from Vietnamese->English
+  to English->Vietnamese and ranked; derived data stays under CC BY-SA 4.0.
 
 Rebuild with: node scripts/build-dict.mjs
 `

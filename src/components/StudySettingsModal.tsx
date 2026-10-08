@@ -145,8 +145,8 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
         <Row>
           <label style={{ fontWeight: 700, fontSize: 14 }}>Từ điển offline</label>
           <Hint>
-            Gợi ý từ, phiên âm và định nghĩa tiếng Anh cho ~41.000 từ phổ biến, không cần mạng hay AI. Dữ liệu từ WordNet (Princeton), CMU
-            Pronouncing Dictionary và FrequencyWords (CC BY-SA 4.0) — chi tiết tại <a href={`${process.env.PUBLIC_URL || ""}/dict/LICENSES.txt`} target="_blank" rel="noopener noreferrer">LICENSES.txt</a>.
+            Gợi ý từ, phiên âm, định nghĩa tiếng Anh và nghĩa tiếng Việt cho ~43.000 từ, không cần mạng hay AI. Dữ liệu từ WordNet
+            (Princeton), CMU Pronouncing Dictionary, FrequencyWords và Wiktionary qua Kaikki.org (CC BY-SA 4.0) — chi tiết tại <a href={`${process.env.PUBLIC_URL || ""}/dict/LICENSES.txt`} target="_blank" rel="noopener noreferrer">LICENSES.txt</a>.
           </Hint>
         </Row>
 

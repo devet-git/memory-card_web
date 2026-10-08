@@ -26,7 +26,10 @@ export default function AutoFillButton({ word, onResult }: Props) {
         setError("Không tìm thấy dữ liệu cho từ này");
       } else {
         // No Vietnamese meaning (offline or unknown word): fall back to the English definition
-        if (!result.translation && result.definition) {
+        if (result.translationSource === "offline") {
+          setNote("Nghĩa lấy từ từ điển Wiktionary offline — có thể có nghĩa chưa phù hợp, hãy giữ lại nghĩa đúng.");
+          onResult(result);
+        } else if (!result.translation && result.definition) {
           setNote("Chưa có nghĩa tiếng Việt — đã dùng định nghĩa tiếng Anh, bạn có thể sửa lại.");
           onResult({ ...result, translation: result.definition });
         } else {

@@ -45,6 +45,7 @@ import { csvToBulkText, collectionToCsv, safeFileName } from "utils/csv";
 import { downloadTextFile } from "utils/download";
 import { buildShareUrl } from "utils/share";
 import { LookupResult } from "utils/dictionary";
+import { lookupBest, formatPos } from "utils/localDict";
 import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
@@ -914,6 +915,7 @@ export default function WordPage() {
   const [newMnemonic, setNewMnemonic] = useState("");
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [bulkText, setBulkText] = useState("");
+  const [bulkFillNote, setBulkFillNote] = useState<string | null>(null);
 
   // Search & filter
   const [tableSearch, setTableSearch] = useState(searchParams.get("q") || ""); // "q" comes from global search
@@ -1109,6 +1111,32 @@ export default function WordPage() {
       setNewMnemonic("");
       setShowAddSingleModal(false);
     }
+  };
+
+  // Lines holding just an English word get their meaning (and example) from the offline dictionary
+  const handleBulkAutoFill = async () => {
+    const lines = bulkText.split("\n");
+    let filled = 0;
+    let missed = 0;
+    const out: string[] = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || /[\t,:|]| - /.test(line) || !/^[A-Za-z][A-Za-z' -]*$/.test(line)) {
+        out.push(raw);
+        continue;
+      }
+      const hit = await lookupBest(line).catch(() => null);
+      const meaning = hit?.vi || (hit?.def ? `${hit.pos ? `(${formatPos(hit.pos)}) ` : ""}${hit.def}` : "");
+      if (!meaning) {
+        missed++;
+        out.push(raw);
+        continue;
+      }
+      filled++;
+      out.push([line, meaning, hit?.example || ""].filter((p, i) => i < 2 || p).join(" - "));
+    }
+    setBulkText(out.join("\n"));
+    setBulkFillNote(`Đã điền nghĩa cho ${filled} từ${missed ? `, ${missed} từ chưa có trong từ điển` : ""}.`);
   };
 
   // Bulk Import
@@ -2393,7 +2421,7 @@ export default function WordPage() {
                   setNewSource(p.word);
                   if (p.ipa && !newPhonetic.trim()) setNewPhonetic(p.ipa);
                   if (p.example && !newExample.trim()) setNewExample(p.example);
-                  if (p.definition && !newTarget.trim()) setNewTarget(p.definition);
+                  if ((p.vi || p.definition) && !newTarget.trim()) setNewTarget(p.vi || p.definition);
                 }}
               />
               <div style={{ marginTop: 8 }}>
@@ -2548,9 +2576,21 @@ export default function WordPage() {
               style={{ minHeight: "180px", fontFamily: "monospace", fontSize: "13px" }}
               placeholder={`Apple - Quả táo - I eat an apple daily\nBanana - Quả chuối\nCat - Con mèo\nDog - Con chó`}
               value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
+              onChange={(e) => {
+                setBulkText(e.target.value);
+                setBulkFillNote(null);
+              }}
               autoFocus
             />
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <MyButton variant="outline" size="sm" onClick={handleBulkAutoFill} disabled={!bulkText.trim()}>
+                Tự điền nghĩa từ từ điển
+              </MyButton>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                {bulkFillNote || "Dòng chỉ có một từ tiếng Anh sẽ được điền nghĩa tiếng Việt và ví dụ (offline)."}
+              </span>
+            </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <MyButton variant="ghost" onClick={() => setShowBulkModal(false)}>
@@ -2593,7 +2633,7 @@ export default function WordPage() {
                           source: p.word,
                           phonetic: prev.phonetic?.trim() ? prev.phonetic : p.ipa || prev.phonetic,
                           example: prev.example?.trim() ? prev.example : p.example || prev.example,
-                          target: prev.target.trim() ? prev.target : p.definition || prev.target
+                          target: prev.target.trim() ? prev.target : p.vi || p.definition || prev.target
                         }
                       : prev
                   )

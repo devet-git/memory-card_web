@@ -9,9 +9,10 @@ export interface DictEntry {
   example: string;
   rank: number; // 1 = most common
   lemma: string; // base form when this word is inflected ("" otherwise)
+  vi: string; // Vietnamese meanings from Wiktionary, "a; b; c" ("" if unknown)
 }
 
-type RawEntry = [string?, string?, string?, string?, number?, string?];
+type RawEntry = [string?, string?, string?, string?, number?, string?, string?];
 type Shard = Record<string, RawEntry>;
 
 const BASE = `${process.env.PUBLIC_URL || ""}/dict`;
@@ -60,7 +61,8 @@ const toEntry = (word: string, raw: RawEntry): DictEntry => ({
   def: raw[2] || "",
   example: raw[3] || "",
   rank: raw[4] || 0,
-  lemma: raw[5] || ""
+  lemma: raw[5] || "",
+  vi: raw[6] || ""
 });
 
 export const POS_LABELS: Record<string, string> = { n: "danh từ", v: "động từ", a: "tính từ", r: "trạng từ" };
@@ -88,7 +90,9 @@ export async function lookupWithBase(word: string): Promise<{ entry: DictEntry; 
 }
 
 /** Best offline data for a word, using the base form when the word itself has no definition. */
-export async function lookupBest(word: string): Promise<{ ipa: string; pos: string; def: string; example: string; base?: string } | null> {
+export async function lookupBest(
+  word: string
+): Promise<{ ipa: string; pos: string; def: string; example: string; vi: string; base?: string } | null> {
   const hit = await lookupWithBase(word);
   if (!hit) return null;
   const { entry, base } = hit;
@@ -98,6 +102,7 @@ export async function lookupBest(word: string): Promise<{ ipa: string; pos: stri
     pos: useBase ? base!.pos : entry.pos,
     def: useBase ? base!.def : entry.def,
     example: entry.example || (base?.example ?? ""),
+    vi: entry.vi || base?.vi || "",
     base: entry.lemma || undefined
   };
 }

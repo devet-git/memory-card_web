@@ -11,4 +11,10 @@ CMU Pronouncing Dictionary (pronunciations, converted to IPA)
 FrequencyWords (word popularity rank; derived from OpenSubtitles)
   https://github.com/hermitdave/FrequencyWords — Creative Commons CC-BY-SA 4.0
 
+Vietnamese meanings: Wiktionary (https://en.wiktionary.org/) extracted by Kaikki.org (wiktextract),
+  reshaped by the which-dialect-vi package (https://github.com/nguyen18/which-dialect), with word frequencies
+  from wordfreq (Robyn Speer, CC BY-SA 4.0). Licensed under Creative Commons CC BY-SA 4.0
+  (https://creativecommons.org/licenses/by-sa/4.0/). This data was filtered, re-indexed from Vietnamese->English
+  to English->Vietnamese and ranked; derived data stays under CC BY-SA 4.0.
+
 Rebuild with: node scripts/build-dict.mjs

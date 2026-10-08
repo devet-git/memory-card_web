@@ -32,7 +32,7 @@ export default function SuggestWordsModal({ existingSources, onAdd, onClose }: P
   const candidates = useMemo(() => {
     if (!top) return [];
     const { from, to } = BANDS[band];
-    return top.filter((e) => e.rank >= from && e.rank < to && e.def && !e.lemma && !have.has(e.word));
+    return top.filter((e) => e.rank >= from && e.rank < to && (e.def || e.vi) && !e.lemma && !have.has(e.word));
   }, [top, band, have]);
 
   const PAGE = 15;
@@ -51,7 +51,7 @@ export default function SuggestWordsModal({ existingSources, onAdd, onClose }: P
       .filter((e) => selected.has(e.word))
       .map((e) => ({
         source: e.word,
-        target: `${e.pos ? `(${formatPos(e.pos)}) ` : ""}${e.def}`,
+        target: e.vi || `${e.pos ? `(${formatPos(e.pos)}) ` : ""}${e.def}`,
         phonetic: e.ipa ? `/${e.ipa}/` : undefined,
         example: e.example || undefined,
         status: "new" as const,
@@ -82,8 +82,8 @@ export default function SuggestWordsModal({ existingSources, onAdd, onClose }: P
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
-          Các từ tiếng Anh thông dụng chưa có trong bộ này, lấy từ từ điển offline. Mặt sau là định nghĩa tiếng Anh; bạn có thể sửa thành nghĩa
-          tiếng Việt sau.
+          Các từ tiếng Anh thông dụng chưa có trong bộ này, lấy từ từ điển offline. Mặt sau là nghĩa tiếng Việt (nếu có trong từ điển) hoặc định
+          nghĩa tiếng Anh; hãy kiểm tra và giữ lại nghĩa phù hợp.
         </p>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {BANDS.map((b, i) => (
@@ -114,6 +114,7 @@ export default function SuggestWordsModal({ existingSources, onAdd, onClose }: P
               <span style={{ fontSize: 14, lineHeight: 1.45 }}>
                 <strong>{e.word}</strong> {e.ipa && <span style={{ color: "#3b82f6" }}>/{e.ipa}/</span>}{" "}
                 <span style={{ color: "var(--text-muted)" }}>{formatPos(e.pos)}</span>
+                {e.vi && <div style={{ fontWeight: 700, fontSize: 13.5 }}>{e.vi}</div>}
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{e.def}</div>
               </span>
             </label>

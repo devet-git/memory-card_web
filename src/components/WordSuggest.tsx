@@ -69,6 +69,7 @@ export interface PickedWord {
   word: string;
   ipa: string;
   definition: string;
+  vi: string; // Vietnamese meanings ("" if unknown)
   example: string;
 }
 
@@ -118,6 +119,7 @@ export default function WordSuggest({ text, onPick }: Props) {
       word: entry.word,
       ipa: best?.ipa ? `/${best.ipa}/` : "",
       definition: best?.def ? `${best.pos ? `(${formatPos(best.pos)}) ` : ""}${best.def}` : "",
+      vi: best?.vi || "",
       example: best?.example || ""
     });
     setItems([]);
@@ -134,7 +136,13 @@ export default function WordSuggest({ text, onPick }: Props) {
             {e.pos && <span style={{ fontSize: 12 }}>{formatPos(e.pos)}</span>}
             <span className="tier">{rankTier(e.rank)}</span>
           </span>
-          {e.def && <span className="def">{e.def}</span>}
+          {(e.vi || e.def) && (
+            <span className="def">
+              {e.vi && <strong style={{ color: "var(--text-primary)" }}>{e.vi}</strong>}
+              {e.vi && e.def ? " — " : ""}
+              {e.def}
+            </span>
+          )}
         </Item>
       ))}
     </Box>
