@@ -45,6 +45,7 @@ interface CollectionContextType {
   reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
   recordReview: (collectionPathname: string, wordId: string | number, isCorrect?: boolean) => void;
   bulkImportWords: (collectionPathname: string, text: string) => number;
+  importSharedCollection: (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }) => string;
   // Backup & Restore
   exportToJSON: () => string;
   importFromJSON: (jsonData: string) => { success: boolean; count?: number; error?: string };
@@ -501,6 +502,37 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     return newWords.length;
   }, []);
 
+  // Create a brand-new collection from a shared deck (name made unique); returns its pathname
+  const importSharedCollection = useCallback(
+    (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }): string => {
+      let name = deck.name.trim() || "Bộ thẻ chia sẻ";
+      const taken = (n: string) => collections.some((c) => c.name.toLowerCase() === n.toLowerCase() || c.pathname === removeAccent(n));
+      let suffix = 2;
+      const base = name;
+      while (taken(name)) name = `${base} (${suffix++})`;
+
+      const pathname = removeAccent(name);
+      const now = Date.now();
+      const created: CollectionItem = {
+        id: `coll-${now}`,
+        name,
+        pathname,
+        category: deck.category || "Tổng hợp",
+        description: deck.description || "",
+        color: "#3b82f6",
+        createdAt: now,
+        updatedAt: now,
+        words: deck.words.map((w, i) => ({
+          ...w,
+          id: `w-share-${now}-${i}-${Math.random().toString(36).substr(2, 5)}`
+        }))
+      };
+      setCollections((prev) => [created, ...prev]);
+      return pathname;
+    },
+    [collections]
+  );
+
   // Backup JSON export
   const exportToJSON = useCallback((): string => {
     const backupData = {
@@ -567,6 +599,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     reviewWord,
     recordReview,
     bulkImportWords,
+    importSharedCollection,
     exportToJSON,
     importFromJSON,
     resetToDefaultData

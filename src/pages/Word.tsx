@@ -26,6 +26,11 @@ import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
+import AutoFillButton from "components/AutoFillButton";
+import { csvToBulkText, collectionToCsv, safeFileName } from "utils/csv";
+import { downloadTextFile } from "utils/download";
+import { buildShareUrl } from "utils/share";
+import { LookupResult } from "utils/dictionary";
 import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
@@ -871,6 +876,9 @@ export default function WordPage() {
   const [newTarget, setNewTarget] = useState("");
   const [newPhonetic, setNewPhonetic] = useState("");
   const [newExample, setNewExample] = useState("");
+  const [newImage, setNewImage] = useState("");
+  const [newMnemonic, setNewMnemonic] = useState("");
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [bulkText, setBulkText] = useState("");
 
   // Search & filter
@@ -1054,6 +1062,8 @@ export default function WordPage() {
         target: newTarget.trim(),
         phonetic: newPhonetic.trim() || undefined,
         example: newExample.trim() || undefined,
+        image: newImage.trim() || undefined,
+        mnemonic: newMnemonic.trim() || undefined,
         status: "new",
         starred: false
       });
@@ -1061,6 +1071,8 @@ export default function WordPage() {
       setNewTarget("");
       setNewPhonetic("");
       setNewExample("");
+      setNewImage("");
+      setNewMnemonic("");
       setShowAddSingleModal(false);
     }
   };
@@ -1083,7 +1095,9 @@ export default function WordPage() {
       source: editingWord.source,
       target: editingWord.target,
       phonetic: editingWord.phonetic,
-      example: editingWord.example
+      example: editingWord.example,
+      image: editingWord.image?.trim() || undefined,
+      mnemonic: editingWord.mnemonic?.trim() || undefined
     });
     setShowEditModal(false);
     setEditingWord(null);
@@ -1419,6 +1433,37 @@ export default function WordPage() {
               title="Nhập nhiều từ cùng lúc từ văn bản"
             >
               Nhập hàng loạt
+            </MyButton>
+            <MyButton
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                downloadTextFile(
+                  collectionToCsv(selectedCollection.words),
+                  `${safeFileName(selectedCollection)}.csv`,
+                  "text/csv;charset=utf-8"
+                )
+              }
+              title="Xuất bộ thẻ ra CSV (mở được bằng Excel / Anki)"
+            >
+              Xuất CSV
+            </MyButton>
+            <MyButton
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const url = await buildShareUrl(selectedCollection);
+                  await navigator.clipboard.writeText(url);
+                  setShareMessage("Đã sao chép liên kết chia sẻ!");
+                } catch {
+                  setShareMessage("Không sao chép được liên kết, hãy thử lại.");
+                }
+                setTimeout(() => setShareMessage(null), 3000);
+              }}
+              title="Sao chép liên kết để gửi bộ thẻ cho người khác"
+            >
+              {shareMessage || "Chia sẻ"}
             </MyButton>
           </div>
         </HeaderTop>
@@ -2214,6 +2259,16 @@ export default function WordPage() {
                 onChange={(e) => setNewSource(e.target.value)}
                 autoFocus
               />
+              <div style={{ marginTop: 8 }}>
+                <AutoFillButton
+                  word={newSource}
+                  onResult={(r: LookupResult) => {
+                    if (r.translation && !newTarget.trim()) setNewTarget(r.translation);
+                    if (r.phonetic && !newPhonetic.trim()) setNewPhonetic(r.phonetic);
+                    if (r.example && !newExample.trim()) setNewExample(r.example);
+                  }}
+                />
+              </div>
             </div>
 
             <div>
@@ -2249,6 +2304,28 @@ export default function WordPage() {
               />
             </div>
 
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
+                Mẹo ghi nhớ (tùy chọn)
+              </label>
+              <MyInput
+                placeholder="VD: nghe giống 'đi lít sơ' → ngon"
+                value={newMnemonic}
+                onChange={(e) => setNewMnemonic(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
+                Link hình ảnh minh họa (tùy chọn)
+              </label>
+              <MyInput
+                placeholder="https://..."
+                value={newImage}
+                onChange={(e) => setNewImage(e.target.value)}
+              />
+            </div>
+
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
               <MyButton variant="ghost" onClick={() => setShowAddSingleModal(false)}>
                 Hủy
@@ -2272,6 +2349,27 @@ export default function WordPage() {
             <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
               Dán danh sách từ vựng theo cấu trúc mỗi dòng một thẻ: <code>Từ vựng - Định nghĩa - Ví dụ</code> hoặc <code>Từ vựng : Định nghĩa</code>
             </p>
+
+            <div>
+              <label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: 6 }}>
+                Hoặc chọn tệp CSV / TSV / Anki (.txt) — nội dung sẽ hiện bên dưới để bạn kiểm tra trước khi nạp
+              </label>
+              <input
+                type="file"
+                accept=".csv,.tsv,.txt,text/csv,text/plain"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const converted = csvToBulkText(String(ev.target?.result || ""));
+                    setBulkText((prev) => (prev.trim() ? prev.trimEnd() + "\n" : "") + converted);
+                  };
+                  reader.readAsText(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
 
             <MyTextarea
               style={{ minHeight: "180px", fontFamily: "monospace", fontSize: "13px" }}
@@ -2312,6 +2410,23 @@ export default function WordPage() {
                 onChange={(e) => setEditingWord({ ...editingWord, source: e.target.value })}
                 autoFocus
               />
+              <div style={{ marginTop: 8 }}>
+                <AutoFillButton
+                  word={editingWord.source}
+                  onResult={(r: LookupResult) =>
+                    setEditingWord((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            target: prev.target.trim() ? prev.target : r.translation || prev.target,
+                            phonetic: prev.phonetic?.trim() ? prev.phonetic : r.phonetic || prev.phonetic,
+                            example: prev.example?.trim() ? prev.example : r.example || prev.example
+                          }
+                        : prev
+                    )
+                  }
+                />
+              </div>
             </div>
 
             <div>
@@ -2341,6 +2456,27 @@ export default function WordPage() {
               <MyTextarea
                 value={editingWord.example || ""}
                 onChange={(e) => setEditingWord({ ...editingWord, example: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
+                Mẹo ghi nhớ
+              </label>
+              <MyInput
+                value={editingWord.mnemonic || ""}
+                onChange={(e) => setEditingWord({ ...editingWord, mnemonic: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
+                Link hình ảnh
+              </label>
+              <MyInput
+                placeholder="https://..."
+                value={editingWord.image || ""}
+                onChange={(e) => setEditingWord({ ...editingWord, image: e.target.value })}
               />
             </div>
 
