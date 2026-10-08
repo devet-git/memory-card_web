@@ -14,6 +14,11 @@ const Backdrop = styled.div`
   padding: 16px;
   animation: fadeIn 0.15s ease-out;
 
+  @media (max-width: 640px) {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -27,7 +32,7 @@ const Backdrop = styled.div`
 const ModalContent = styled.div<{ $maxWidth?: string }>`
   background-color: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 14px;
+  border-radius: 16px;
   width: 100%;
   max-width: ${(props) => props.$maxWidth || "520px"};
   max-height: 90vh;
@@ -36,6 +41,12 @@ const ModalContent = styled.div<{ $maxWidth?: string }>`
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @media (max-width: 640px) {
+    max-height: 86vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 
   @keyframes zoomIn {
     from {
@@ -57,11 +68,19 @@ const ModalHeader = styled.header`
   border-bottom: 1px solid var(--border-color, #e2e8f0);
   background-color: var(--bg-secondary, #ffffff);
 
+  @media (max-width: 640px) {
+    padding: 14px 16px;
+  }
+
   h3 {
     font-size: 18px;
     font-weight: 700;
     color: var(--text-primary, #0f172a);
     margin: 0;
+
+    @media (max-width: 640px) {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -88,6 +107,10 @@ const ModalBody = styled.div`
   padding: 20px;
   overflow-y: auto;
   color: var(--text-primary, #0f172a);
+
+  @media (max-width: 640px) {
+    padding: 16px 14px;
+  }
 `;
 
 interface MyModalProps {

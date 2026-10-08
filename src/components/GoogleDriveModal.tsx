@@ -45,11 +45,17 @@ const UserProfileCard = styled.div`
   border-radius: 12px;
   background: var(--bg-tertiary, #f1f5f9);
   border: 1px solid var(--border-color, #e2e8f0);
+  gap: 10px;
+
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 
   .user-info {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 
     img {
       width: 40px;
@@ -58,21 +64,29 @@ const UserProfileCard = styled.div`
       object-fit: cover;
       border: 2px solid #ffffff;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
     }
 
     .details {
       display: flex;
       flex-direction: column;
+      min-width: 0;
 
       .name {
         font-weight: 700;
         font-size: 14px;
         color: var(--text-primary, #0f172a);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .email {
         font-size: 12px;
         color: var(--text-secondary, #64748b);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   }
@@ -87,6 +101,17 @@ const ActionCard = styled.div`
   border: 1px solid var(--border-color, #e2e8f0);
   background: var(--bg-card, #ffffff);
   gap: 14px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 12px;
+
+    button {
+      width: 100%;
+    }
+  }
 
   .card-content {
     display: flex;

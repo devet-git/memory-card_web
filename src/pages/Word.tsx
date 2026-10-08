@@ -37,14 +37,43 @@ const Container = styled.div`
 `;
 
 const PageHeader = styled.div`
+  position: sticky;
+  top: 64px;
+  z-index: 80;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 16px;
-  padding: 20px 24px;
-  box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
+  padding: 14px 20px;
+  box-shadow: var(--card-shadow, 0 4px 12px -2px rgba(0, 0, 0, 0.06));
+
+  @media (max-width: 768px) {
+    top: 56px;
+    padding: 10px 12px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+`;
+
+const StickyStudyFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (max-width: 640px) {
+    position: sticky;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    z-index: 70;
+    background: var(--bg-card, #ffffff);
+    padding: 10px 12px;
+    gap: 8px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  }
 `;
 
 const HeaderTop = styled.div`
@@ -53,12 +82,22 @@ const HeaderTop = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const TitleArea = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
+
+  @media (max-width: 640px) {
+    gap: 10px;
+  }
 
   .back-btn {
     width: 38px;
@@ -71,6 +110,13 @@ const TitleArea = styled.div`
     color: var(--text-primary, #0f172a);
     font-size: 20px;
     transition: all 0.15s ease;
+    flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      width: 34px;
+      height: 34px;
+      font-size: 18px;
+    }
 
     &:hover {
       background: var(--border-color, #e2e8f0);
@@ -83,6 +129,10 @@ const TitleArea = styled.div`
     font-weight: 800;
     margin: 0;
     color: var(--text-primary, #0f172a);
+
+    @media (max-width: 640px) {
+      font-size: 17px;
+    }
   }
 
   .cat-badge {
@@ -92,6 +142,7 @@ const TitleArea = styled.div`
     border-radius: 9999px;
     background-color: rgba(59, 130, 246, 0.12);
     color: #2563eb;
+    white-space: nowrap;
   }
 `;
 
@@ -103,6 +154,11 @@ const ModeTabs = styled.div`
   padding: 4px;
   border-radius: 10px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const ModeTab = styled.button<{ $active: boolean }>`
@@ -118,6 +174,13 @@ const ModeTab = styled.button<{ $active: boolean }>`
   color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--text-secondary, #64748b)")};
   box-shadow: ${(props) => (props.$active ? "0 2px 6px rgba(0, 0, 0, 0.08)" : "none")};
   transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    padding: 6px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
 
   &:hover {
     color: var(--text-primary, #0f172a);
@@ -133,6 +196,10 @@ const StudyWrapper = styled.div`
   max-width: 960px;
   margin: 0 auto;
   width: 100%;
+
+  @media (max-width: 640px) {
+    gap: 16px;
+  }
 `;
 
 const StudyToolBar = styled.div`
@@ -142,11 +209,24 @@ const StudyToolBar = styled.div`
   width: 100%;
   flex-wrap: wrap;
   gap: 12px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const FilterChips = styled.div`
   display: flex;
   gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const FilterChip = styled.button<{ $active: boolean }>`
@@ -158,6 +238,8 @@ const FilterChip = styled.button<{ $active: boolean }>`
   color: ${(props) => (props.$active ? "#ffffff" : "var(--text-secondary, #64748b)")};
   border: 1px solid ${(props) => (props.$active ? "#3b82f6" : "var(--border-color, #e2e8f0)")};
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 
 const CardControlRow = styled.div`
@@ -166,12 +248,26 @@ const CardControlRow = styled.div`
   align-items: center;
   width: 100%;
   gap: 16px;
+
+  @media (max-width: 640px) {
+    gap: 8px;
+
+    button {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+  }
 `;
 
 const NavigationCounter = styled.div`
   font-size: 15px;
   font-weight: 700;
   color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    font-size: 13px;
+  }
 `;
 
 const RatingBar = styled.div`
@@ -180,6 +276,11 @@ const RatingBar = styled.div`
   width: 100%;
   justify-content: center;
   margin-top: 8px;
+
+  @media (max-width: 640px) {
+    gap: 8px;
+    margin-top: 4px;
+  }
 `;
 
 const RateButton = styled.button<{ $color: string }>`
@@ -199,6 +300,17 @@ const RateButton = styled.button<{ $color: string }>`
   cursor: pointer;
   box-shadow: var(--card-shadow, 0 2px 4px rgba(0, 0, 0, 0.05));
   transition: all 0.15s ease;
+
+  @media (max-width: 640px) {
+    padding: 10px 4px;
+    font-size: 12px;
+    border-radius: 10px;
+    gap: 2px;
+
+    .key-hint {
+      display: none;
+    }
+  }
 
   .key-hint {
     font-size: 11px;
@@ -236,6 +348,12 @@ const QuizCard = styled.div`
   text-align: center;
   gap: 20px;
 
+  @media (max-width: 640px) {
+    padding: 20px 14px;
+    gap: 14px;
+    border-radius: 16px;
+  }
+
   .quiz-q-label {
     font-size: 13px;
     font-weight: 700;
@@ -249,6 +367,11 @@ const QuizCard = styled.div`
     font-weight: 800;
     color: var(--text-primary, #0f172a);
     margin: 0;
+    word-break: break-word;
+
+    @media (max-width: 640px) {
+      font-size: 22px;
+    }
   }
 `;
 
@@ -260,6 +383,10 @@ const QuizOptionsGrid = styled.div`
 
   @media (min-width: 680px) {
     grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 640px) {
+    gap: 10px;
   }
 `;
 
@@ -281,6 +408,15 @@ const OptionButton = styled.button<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  @media (max-width: 640px) {
+    padding: 12px 14px;
+    font-size: 14px;
+
+    .key-shortcut-hint {
+      display: none !important;
+    }
+  }
 
   ${(props) => {
     if (props.$showResult) {
@@ -336,6 +472,12 @@ const QuizToolbar = styled.div`
   flex-wrap: wrap;
   gap: 10px;
   width: 100%;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 `;
 
 const QuizToolbarGroup = styled.div`
@@ -343,6 +485,16 @@ const QuizToolbarGroup = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+    button {
+      flex: 1;
+      justify-content: center;
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+  }
 `;
 
 const QuizPillButton = styled.button<{ $active?: boolean }>`
@@ -452,6 +604,10 @@ const TypingContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 640px) {
+    gap: 14px;
+  }
 `;
 
 const TypingCard = styled.div`
@@ -464,22 +620,119 @@ const TypingCard = styled.div`
   flex-direction: column;
   gap: 20px;
   text-align: center;
+
+  @media (max-width: 640px) {
+    padding: 20px 14px;
+    gap: 14px;
+    border-radius: 16px;
+
+    h2 {
+      font-size: 20px;
+    }
+  }
 `;
 
 /* GRID & TABLE VIEW STYLES */
 const WordGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
   width: 100%;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 
 const TableWrapper = styled.div`
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
+
+  @media (max-width: 640px) {
+    border-radius: 14px;
+  }
+`;
+
+const DesktopTableContainer = styled.div`
+  display: block;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+
+const MobileCardList = styled.div`
+  display: none;
+
+  @media (max-width: 640px) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+`;
+
+const MobileWordCard = styled.div`
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--card-shadow, 0 2px 4px rgba(0, 0, 0, 0.04));
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+
+    .word-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .term {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary, #0f172a);
+      }
+
+      .phonetic {
+        font-size: 13px;
+        color: #3b82f6;
+        font-family: monospace;
+      }
+    }
+  }
+
+  .def {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563eb;
+    margin: 0;
+  }
+
+  .example {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-secondary, #64748b);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color, #e2e8f0);
+  }
 `;
 
 const Table = styled.table`
@@ -489,6 +742,9 @@ const Table = styled.table`
   font-size: 14px;
 
   th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     background-color: var(--bg-tertiary, #f1f5f9);
     padding: 14px 16px;
     font-weight: 700;
@@ -509,6 +765,38 @@ const Table = styled.table`
   tr:hover td {
     background-color: rgba(59, 130, 246, 0.03);
   }
+`;
+
+const StatusBadge = styled.span<{ $status?: MasteryStatus }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  ${(props) => {
+    switch (props.$status) {
+      case "mastered":
+        return `
+          background-color: rgba(16, 185, 129, 0.15);
+          color: #059669;
+        `;
+      case "learning":
+        return `
+          background-color: rgba(245, 158, 11, 0.15);
+          color: #d97706;
+        `;
+      default:
+        return `
+          background-color: rgba(148, 163, 184, 0.15);
+          color: #64748b;
+        `;
+    }
+  }}
 `;
 
 const CompletionCelebration = styled.div`
@@ -1256,59 +1544,61 @@ export default function WordPage() {
                 </div>
               )}
 
-              {/* Card Controls */}
-              <CardControlRow>
-                <MyButton
-                  variant="secondary"
-                  size="md"
-                  onClick={handlePrevCard}
-                  disabled={currentIndex === 0}
-                >
-                  ← Thẻ trước
-                </MyButton>
+              {/* Card Controls & Rating */}
+              <StickyStudyFooter>
+                <CardControlRow>
+                  <MyButton
+                    variant="secondary"
+                    size="md"
+                    onClick={handlePrevCard}
+                    disabled={currentIndex === 0}
+                  >
+                    ← Thẻ trước
+                  </MyButton>
 
-                <NavigationCounter>
-                  Thẻ {currentIndex + 1} / {displayWords.length}
-                </NavigationCounter>
+                  <NavigationCounter>
+                    Thẻ {currentIndex + 1} / {displayWords.length}
+                  </NavigationCounter>
 
-                <MyButton
-                  variant="primary"
-                  size="md"
-                  onClick={handleNextCard}
-                >
-                  Thẻ sau →
-                </MyButton>
-              </CardControlRow>
+                  <MyButton
+                    variant="primary"
+                    size="md"
+                    onClick={handleNextCard}
+                  >
+                    Thẻ sau →
+                  </MyButton>
+                </CardControlRow>
 
-              {/* Spaced Repetition Rating Buttons */}
-              <RatingBar>
-                <RateButton
-                  $color="#ef4444"
-                  onClick={() => handleRateCard("learning")}
-                  title="Bấm phím 1"
-                >
-                  <span>Chưa nhớ</span>
-                  <span className="key-hint">Phím 1</span>
-                </RateButton>
+                {/* Spaced Repetition Rating Buttons */}
+                <RatingBar>
+                  <RateButton
+                    $color="#ef4444"
+                    onClick={() => handleRateCard("learning")}
+                    title="Bấm phím 1"
+                  >
+                    <span>Chưa nhớ</span>
+                    <span className="key-hint">Phím 1</span>
+                  </RateButton>
 
-                <RateButton
-                  $color="#f59e0b"
-                  onClick={() => handleRateCard("learning")}
-                  title="Bấm phím 2"
-                >
-                  <span>Đang học</span>
-                  <span className="key-hint">Phím 2</span>
-                </RateButton>
+                  <RateButton
+                    $color="#f59e0b"
+                    onClick={() => handleRateCard("learning")}
+                    title="Bấm phím 2"
+                  >
+                    <span>Đang học</span>
+                    <span className="key-hint">Phím 2</span>
+                  </RateButton>
 
-                <RateButton
-                  $color="#10b981"
-                  onClick={() => handleRateCard("mastered")}
-                  title="Bấm phím 3"
-                >
-                  <span>Đã thuộc làu</span>
-                  <span className="key-hint">Phím 3</span>
-                </RateButton>
-              </RatingBar>
+                  <RateButton
+                    $color="#10b981"
+                    onClick={() => handleRateCard("mastered")}
+                    title="Bấm phím 3"
+                  >
+                    <span>Đã thuộc làu</span>
+                    <span className="key-hint">Phím 3</span>
+                  </RateButton>
+                </RatingBar>
+              </StickyStudyFooter>
             </>
           )}
         </StudyWrapper>
@@ -1714,7 +2004,8 @@ export default function WordPage() {
               status={word.status}
               starred={word.starred}
               onToggleStar={() => toggleStar(selectedCollection.pathname, word.id)}
-              height="250px"
+              height="260px"
+              compact={true}
             />
           ))}
         </WordGrid>
@@ -1736,105 +2027,155 @@ export default function WordPage() {
             </div>
           </div>
 
-          <TableWrapper>
-            <Table>
-              <thead>
-                <tr>
-                  <th style={{ width: "40px" }}>#</th>
-                  <th>Thuật ngữ (Mặt trước)</th>
-                  <th>Phiên âm</th>
-                  <th>Định nghĩa (Mặt sau)</th>
-                  <th>Ví dụ</th>
-                  <th>Trạng thái</th>
-                  <th style={{ width: "100px", textAlign: "right" }}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {words
-                  .filter((w) =>
-                    w.source.toLowerCase().includes(tableSearch.toLowerCase()) ||
-                    w.target.toLowerCase().includes(tableSearch.toLowerCase())
-                  )
-                  .map((word, idx) => (
-                    <tr key={word.id}>
-                      <td>{idx + 1}</td>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}>
-                          <button
-                            onClick={() => toggleStar(selectedCollection.pathname, word.id)}
-                            style={{ color: word.starred ? "#f59e0b" : "#cbd5e1", fontSize: "16px" }}
-                          >
-                            {word.starred ? <AiFillStar /> : <AiOutlineStar />}
-                          </button>
-                          <span>{word.source}</span>
-                          <button
-                            onClick={() => speakWord(word.source)}
-                            style={{ color: "#3b82f6", fontSize: "16px" }}
-                            title="Nghe phát âm"
-                          >
-                            <MdVolumeUp />
-                          </button>
-                        </div>
-                      </td>
-                      <td style={{ color: "#3b82f6", fontFamily: "monospace" }}>{word.phonetic || "—"}</td>
-                      <td style={{ fontWeight: 600 }}>{word.target}</td>
-                      <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-                        {word.example ? `"${word.example}"` : "—"}
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            padding: "3px 8px",
-                            borderRadius: "9999px",
-                            backgroundColor:
-                              word.status === "mastered"
-                                ? "rgba(16, 185, 129, 0.15)"
-                                : word.status === "learning"
-                                ? "rgba(245, 158, 11, 0.15)"
-                                : "rgba(148, 163, 184, 0.15)",
-                            color:
-                              word.status === "mastered"
-                                ? "#059669"
-                                : word.status === "learning"
-                                ? "#d97706"
-                                : "#64748b"
-                          }}
-                        >
-                          {word.status === "mastered" ? "Đã thuộc" : word.status === "learning" ? "Đang học" : "Chưa ôn"}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "inline-flex", gap: "4px" }}>
-                          <MyButton
-                            variant="ghost"
-                            size="sm"
-                            icon={<AiOutlineEdit />}
-                            onClick={() => {
-                              setEditingWord(word);
-                              setShowEditModal(true);
-                            }}
-                            title="Sửa từ"
-                          />
-                          <MyButton
-                            variant="ghost"
-                            size="sm"
-                            icon={<AiOutlineDelete />}
-                            onClick={() => {
-                              if (window.confirm(`Bạn muốn xóa thẻ "${word.source}"?`)) {
-                                deleteWord(selectedCollection.pathname, word.id);
-                              }
-                            }}
-                            title="Xóa thẻ"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </Table>
-          </TableWrapper>
+          <DesktopTableContainer>
+            <TableWrapper>
+              <Table>
+                <thead>
+                  <tr>
+                    <th style={{ width: "40px" }}>#</th>
+                    <th>Thuật ngữ (Mặt trước)</th>
+                    <th>Phiên âm</th>
+                    <th>Định nghĩa (Mặt sau)</th>
+                    <th>Ví dụ</th>
+                    <th style={{ width: "120px", minWidth: "120px", whiteSpace: "nowrap" }}>Trạng thái</th>
+                    <th style={{ width: "100px", minWidth: "100px", textAlign: "right", whiteSpace: "nowrap" }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {words
+                    .filter((w) =>
+                      w.source.toLowerCase().includes(tableSearch.toLowerCase()) ||
+                      w.target.toLowerCase().includes(tableSearch.toLowerCase())
+                    )
+                    .map((word, idx) => (
+                      <tr key={word.id}>
+                        <td>{idx + 1}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}>
+                            <button
+                              onClick={() => toggleStar(selectedCollection.pathname, word.id)}
+                              style={{ color: word.starred ? "#f59e0b" : "#cbd5e1", fontSize: "16px" }}
+                            >
+                              {word.starred ? <AiFillStar /> : <AiOutlineStar />}
+                            </button>
+                            <span>{word.source}</span>
+                            <button
+                              onClick={() => speakWord(word.source)}
+                              style={{ color: "#3b82f6", fontSize: "16px" }}
+                              title="Nghe phát âm"
+                            >
+                              <MdVolumeUp />
+                            </button>
+                          </div>
+                        </td>
+                        <td style={{ color: "#3b82f6", fontFamily: "monospace" }}>{word.phonetic || "—"}</td>
+                        <td style={{ fontWeight: 600 }}>{word.target}</td>
+                        <td style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                          {word.example ? `"${word.example}"` : "—"}
+                        </td>
+                        <td style={{ width: "120px", whiteSpace: "nowrap" }}>
+                          <StatusBadge $status={word.status}>
+                            {word.status === "mastered" ? "Đã thuộc" : word.status === "learning" ? "Đang học" : "Chưa ôn"}
+                          </StatusBadge>
+                        </td>
+                        <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "inline-flex", gap: "4px" }}>
+                            <MyButton
+                              variant="ghost"
+                              size="sm"
+                              icon={<AiOutlineEdit />}
+                              onClick={() => {
+                                setEditingWord(word);
+                                setShowEditModal(true);
+                              }}
+                              title="Sửa từ"
+                            />
+                            <MyButton
+                              variant="ghost"
+                              size="sm"
+                              icon={<AiOutlineDelete />}
+                              onClick={() => {
+                                if (window.confirm(`Bạn muốn xóa thẻ "${word.source}"?`)) {
+                                  deleteWord(selectedCollection.pathname, word.id);
+                                }
+                              }}
+                              title="Xóa thẻ"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </Table>
+            </TableWrapper>
+          </DesktopTableContainer>
+
+          {/* MOBILE WORD CARDS LIST */}
+          <MobileCardList>
+            {words
+              .filter((w) =>
+                w.source.toLowerCase().includes(tableSearch.toLowerCase()) ||
+                w.target.toLowerCase().includes(tableSearch.toLowerCase())
+              )
+              .map((word) => (
+                <MobileWordCard key={word.id}>
+                  <div className="card-top">
+                    <div className="word-head">
+                      <button
+                        onClick={() => toggleStar(selectedCollection.pathname, word.id)}
+                        style={{ color: word.starred ? "#f59e0b" : "#cbd5e1", fontSize: "18px", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                      >
+                        {word.starred ? <AiFillStar /> : <AiOutlineStar />}
+                      </button>
+                      <span className="term">{word.source}</span>
+                      {word.phonetic && <span className="phonetic">{word.phonetic}</span>}
+                    </div>
+
+                    <button
+                      onClick={() => speakWord(word.source)}
+                      style={{ color: "#3b82f6", fontSize: "18px", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                      title="Nghe phát âm"
+                    >
+                      <MdVolumeUp />
+                    </button>
+                  </div>
+
+                  <p className="def">{word.target}</p>
+
+                  {word.example && <p className="example">"{word.example}"</p>}
+
+                  <div className="card-bottom">
+                    <StatusBadge $status={word.status}>
+                      {word.status === "mastered" ? "Đã thuộc" : word.status === "learning" ? "Đang học" : "Chưa ôn"}
+                    </StatusBadge>
+
+                    <div style={{ display: "inline-flex", gap: "6px" }}>
+                      <MyButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<AiOutlineEdit />}
+                        onClick={() => {
+                          setEditingWord(word);
+                          setShowEditModal(true);
+                        }}
+                        title="Sửa từ"
+                      />
+                      <MyButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<AiOutlineDelete />}
+                        onClick={() => {
+                          if (window.confirm(`Bạn muốn xóa thẻ "${word.source}"?`)) {
+                            deleteWord(selectedCollection.pathname, word.id);
+                          }
+                        }}
+                        title="Xóa thẻ"
+                      />
+                    </div>
+                  </div>
+                </MobileWordCard>
+              ))}
+          </MobileCardList>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -10,9 +10,11 @@ import {
   MdOutlineRestartAlt,
   MdVolumeUp,
   MdOutlineApps,
-  MdCloudQueue
+  MdCloudQueue,
+  MdMoreHoriz,
+  MdOutlineDashboardCustomize
 } from "react-icons/md";
-import { IoFlashOutline, IoFolderOpenOutline, IoCafeOutline } from "react-icons/io5";
+import { IoFlashOutline, IoFolderOpenOutline, IoCafeOutline, IoHomeOutline, IoSparklesOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
@@ -43,6 +45,10 @@ const Header = styled.header`
   border-bottom: 1px solid var(--border-color, #e2e8f0);
   backdrop-filter: blur(10px);
   padding: 0 20px;
+
+  @media (max-width: 768px) {
+    padding: 0 12px;
+  }
 `;
 
 const NavContainer = styled.div`
@@ -54,12 +60,21 @@ const NavContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+
+  @media (max-width: 768px) {
+    height: 56px;
+    gap: 8px;
+  }
 `;
 
 const BrandArea = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+  }
 `;
 
 const LogoLink = styled(Link)`
@@ -70,25 +85,6 @@ const LogoLink = styled(Link)`
   font-size: 20px;
   letter-spacing: -0.02em;
   color: var(--text-primary, #0f172a);
-
-  .logo-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-  }
-
-  .logo-text {
-    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
 `;
 
 const NavLinks = styled.nav`
@@ -96,7 +92,7 @@ const NavLinks = styled.nav`
   align-items: center;
   gap: 6px;
 
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     display: none;
   }
 `;
@@ -123,6 +119,30 @@ const RightControls = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
+`;
+
+const DesktopOnlyControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const MobileOnlyControls = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 `;
 
 const StreakBadge = styled.div`
@@ -135,11 +155,96 @@ const StreakBadge = styled.div`
   color: #d97706;
   font-weight: 700;
   font-size: 13px;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    padding: 5px 8px;
+    font-size: 12px;
+    gap: 3px;
+  }
 
   svg {
     color: #ea580c;
     font-size: 17px;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+      font-size: 15px;
+    }
   }
+`;
+
+const DropdownContainer = styled.div`
+  position: relative;
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 230px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 6px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownAnim 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes dropdownAnim {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+`;
+
+const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #0f172a);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary, #f1f5f9);
+    color: var(--accent-primary, #2563eb);
+  }
+
+  .icon {
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary, #64748b);
+    flex-shrink: 0;
+  }
+
+  &:hover .icon {
+    color: var(--accent-primary, #2563eb);
+  }
+`;
+
+const DropdownDivider = styled.div`
+  height: 1px;
+  background: var(--border-color, #e2e8f0);
+  margin: 4px 6px;
 `;
 
 const MainContent = styled.main`
@@ -149,8 +254,8 @@ const MainContent = styled.main`
   margin: 0 auto;
   padding: 24px 28px 60px 28px;
 
-  @media (max-width: 640px) {
-    padding: 16px 14px 60px 14px;
+  @media (max-width: 768px) {
+    padding: 16px 12px calc(80px + env(safe-area-inset-bottom, 0px)) 12px;
   }
 `;
 
@@ -161,6 +266,129 @@ const Footer = styled.footer`
   text-align: center;
   font-size: 13px;
   color: var(--text-muted, #94a3b8);
+
+  @media (max-width: 768px) {
+    padding: 16px 12px calc(76px + env(safe-area-inset-bottom, 0px)) 12px;
+    font-size: 12px;
+  }
+`;
+
+/* MOBILE BOTTOM NAVIGATION BAR */
+const BottomNavBar = styled.nav`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-secondary, #ffffff);
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    backdrop-filter: blur(14px);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -3px 15px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const BottomNavItem = styled(Link)<{ $active: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  height: 100%;
+  color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--text-muted, #94a3b8)")};
+  font-size: 11px;
+  font-weight: ${(props) => (props.$active ? "700" : "500")};
+  text-decoration: none;
+  transition: all 0.15s ease;
+  user-select: none;
+
+  svg {
+    font-size: 20px;
+    color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "inherit")};
+  }
+`;
+
+const BottomNavButton = styled.button<{ $active?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  height: 100%;
+  color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--text-muted, #94a3b8)")};
+  font-size: 11px;
+  font-weight: ${(props) => (props.$active ? "700" : "500")};
+  background: transparent;
+  border: none;
+  transition: all 0.15s ease;
+  user-select: none;
+  cursor: pointer;
+
+  svg {
+    font-size: 20px;
+    color: ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "inherit")};
+  }
+`;
+
+const UtilitiesMenuGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 400px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+`;
+
+const UtilityCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  text-align: left;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+
+  &:hover, &:active {
+    background: var(--bg-tertiary, #f1f5f9);
+    border-color: var(--accent-primary, #3b82f6);
+    transform: translateY(-1px);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary, #0f172a);
+
+    svg {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+  }
+
+  .desc {
+    font-size: 12px;
+    color: var(--text-secondary, #64748b);
+    line-height: 1.35;
+  }
 `;
 
 const ShortcutList = styled.div`
@@ -234,8 +462,25 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
+  const [showMobileMenuModal, setShowMobileMenuModal] = useState(false);
+  const [showUtilitiesDropdown, setShowUtilitiesDropdown] = useState(false);
   const [testSpeechText, setTestSpeechText] = useState("Hello, welcome to Memory Card!");
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowUtilitiesDropdown(false);
+      }
+    };
+    if (showUtilitiesDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showUtilitiesDropdown]);
 
   const handleExportFile = () => {
     const jsonStr = exportToJSON();
@@ -273,14 +518,11 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
       <Header>
         <NavContainer>
           <BrandArea>
-            <LogoLink to="/" title="MemCard - Trang chủ">
-              <MemCardLogo size={36} />
+            <LogoLink to="/" title="MemCard - Về trang chủ">
+              <MemCardLogo size={32} />
             </LogoLink>
 
             <NavLinks>
-              <NavItem to="/" $active={location.pathname === "/"}>
-                Trang chủ
-              </NavItem>
               <NavItem
                 to="/collections"
                 $active={location.pathname.startsWith("/collections")}
@@ -304,61 +546,103 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               <span>{stats.studyStreakDays} ngày</span>
             </StreakBadge>
 
-            <MyButton
-              variant="outline"
-              size="sm"
-              icon={<MdCloudQueue color="#3b82f6" />}
-              onClick={() => setShowGoogleDriveModal(true)}
-              title="Đồng bộ đám mây Google Drive"
-            >
-              Google Drive
-            </MyButton>
+            {/* DESKTOP CONTROLS */}
+            <DesktopOnlyControls>
+              <MyButton
+                variant="ghost"
+                size="sm"
+                icon={settings.theme === "dark" ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
+                onClick={toggleTheme}
+                title={settings.theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
+              />
 
-            <MyButton
-              variant="primary"
-              size="sm"
-              icon={<IoCafeOutline />}
-              onClick={() => setShowDonateModal(true)}
-              title="Ủng hộ tác giả một tách cà phê (Buy Me a Coffee)"
-            >
-              Mời cà phê ☕
-            </MyButton>
+              <DropdownContainer ref={dropdownRef}>
+                <MyButton
+                  variant={showUtilitiesDropdown ? "secondary" : "ghost"}
+                  size="sm"
+                  icon={<MdOutlineDashboardCustomize />}
+                  onClick={() => setShowUtilitiesDropdown(!showUtilitiesDropdown)}
+                  title="Tiện ích & Cài đặt nâng cao"
+                >
+                  Tiện ích
+                </MyButton>
 
-            <MyButton
-              variant="ghost"
-              size="sm"
-              icon={<MdVolumeUp />}
-              onClick={() => setShowVoiceModal(true)}
-              title="Cài đặt phát âm Text to Speech (Miễn phí)"
-            >
-              Giọng đọc
-            </MyButton>
+                {showUtilitiesDropdown && (
+                  <DropdownMenu>
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowGoogleDriveModal(true);
+                      }}
+                    >
+                      <span className="icon"><MdCloudQueue color="#3b82f6" /></span>
+                      <span>Google Drive</span>
+                    </DropdownItem>
 
-            <MyButton
-              variant="ghost"
-              size="sm"
-              icon={settings.theme === "dark" ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
-              onClick={toggleTheme}
-              title={settings.theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
-            />
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowDonateModal(true);
+                      }}
+                    >
+                      <span className="icon"><IoCafeOutline color="#ea580c" /></span>
+                      <span>Mời cà phê ☕</span>
+                    </DropdownItem>
 
-            <MyButton
-              variant="ghost"
-              size="sm"
-              icon={<MdOutlineFileUpload />}
-              onClick={() => setShowBackupModal(true)}
-              title="Sao lưu & Phục hồi dữ liệu trên trình duyệt"
-            >
-              Sao lưu
-            </MyButton>
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowVoiceModal(true);
+                      }}
+                    >
+                      <span className="icon"><MdVolumeUp color="#8b5cf6" /></span>
+                      <span>Giọng đọc (TTS)</span>
+                    </DropdownItem>
 
-            <MyButton
-              variant="ghost"
-              size="sm"
-              icon={<MdOutlineHelpOutline />}
-              onClick={() => setShowShortcutsModal(true)}
-              title="Phím tắt khi học"
-            />
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowBackupModal(true);
+                      }}
+                    >
+                      <span className="icon"><MdOutlineFileUpload color="#10b981" /></span>
+                      <span>Sao lưu JSON</span>
+                    </DropdownItem>
+
+                    <DropdownDivider />
+
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowShortcutsModal(true);
+                      }}
+                    >
+                      <span className="icon"><MdOutlineHelpOutline color="#6366f1" /></span>
+                      <span>Phím tắt học</span>
+                    </DropdownItem>
+                  </DropdownMenu>
+                )}
+              </DropdownContainer>
+            </DesktopOnlyControls>
+
+            {/* MOBILE ONLY CONTROLS */}
+            <MobileOnlyControls>
+              <MyButton
+                variant="ghost"
+                size="sm"
+                icon={settings.theme === "dark" ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
+                onClick={toggleTheme}
+                title={settings.theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
+              />
+
+              <MyButton
+                variant="secondary"
+                size="sm"
+                icon={<MdMoreHoriz />}
+                onClick={() => setShowMobileMenuModal(true)}
+                title="Tiện ích & Cài đặt"
+              />
+            </MobileOnlyControls>
           </RightControls>
         </NavContainer>
       </Header>
@@ -370,6 +654,126 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           MEMOCARD • Ứng dụng học từ vựng Flashcard ghi nhớ nhanh • Toàn bộ dữ liệu được lưu an toàn trực tiếp trên trình duyệt của bạn (Offline-ready)
         </p>
       </Footer>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <BottomNavBar>
+        <BottomNavItem to="/" $active={location.pathname === "/"}>
+          <IoHomeOutline />
+          <span>Trang chủ</span>
+        </BottomNavItem>
+
+        <BottomNavItem
+          to="/collections"
+          $active={location.pathname.startsWith("/collections")}
+        >
+          <IoFolderOpenOutline />
+          <span>Bộ thẻ ({collections.length})</span>
+        </BottomNavItem>
+
+        <BottomNavItem
+          to="/apps"
+          $active={location.pathname.startsWith("/apps")}
+        >
+          <MdOutlineApps />
+          <span>Ứng dụng</span>
+        </BottomNavItem>
+
+        <BottomNavButton
+          onClick={() => setShowMobileMenuModal(true)}
+          $active={showMobileMenuModal}
+        >
+          <MdOutlineDashboardCustomize />
+          <span>Tiện ích</span>
+        </BottomNavButton>
+      </BottomNavBar>
+
+      {/* MOBILE UTILITIES SHEET / MODAL */}
+      {showMobileMenuModal && (
+        <MyModal
+          title="Tiện ích & Cài đặt nâng cao"
+          onClose={() => setShowMobileMenuModal(false)}
+        >
+          <UtilitiesMenuGrid>
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowGoogleDriveModal(true);
+              }}
+            >
+              <div className="header">
+                <MdCloudQueue color="#3b82f6" />
+                <span>Google Drive</span>
+              </div>
+              <div className="desc">Đồng bộ đám mây dữ liệu thẻ cá nhân</div>
+            </UtilityCard>
+
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowDonateModal(true);
+              }}
+            >
+              <div className="header">
+                <IoCafeOutline color="#ea580c" />
+                <span>Mời cà phê ☕</span>
+              </div>
+              <div className="desc">Ủng hộ tác giả duy trì dự án miễn phí</div>
+            </UtilityCard>
+
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowVoiceModal(true);
+              }}
+            >
+              <div className="header">
+                <MdVolumeUp color="#8b5cf6" />
+                <span>Giọng đọc TTS</span>
+              </div>
+              <div className="desc">Cài đặt tốc độ và thử giọng phát âm</div>
+            </UtilityCard>
+
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowBackupModal(true);
+              }}
+            >
+              <div className="header">
+                <MdOutlineFileUpload color="#10b981" />
+                <span>Sao lưu JSON</span>
+              </div>
+              <div className="desc">Xuất & nhập tệp dữ liệu máy tính</div>
+            </UtilityCard>
+
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowShortcutsModal(true);
+              }}
+            >
+              <div className="header">
+                <MdOutlineHelpOutline color="#6366f1" />
+                <span>Phím tắt học</span>
+              </div>
+              <div className="desc">Xem bảng phím tắt thao tác nhanh</div>
+            </UtilityCard>
+
+            <UtilityCard
+              onClick={() => {
+                toggleTheme();
+                setShowMobileMenuModal(false);
+              }}
+            >
+              <div className="header">
+                {settings.theme === "dark" ? <MdOutlineLightMode color="#f59e0b" /> : <MdOutlineDarkMode color="#475569" />}
+                <span>{settings.theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}</span>
+              </div>
+              <div className="desc">Chuyển đổi màu sắc sáng / ban đêm</div>
+            </UtilityCard>
+          </UtilitiesMenuGrid>
+        </MyModal>
+      )}
 
       {/* SHORTCUTS MODAL */}
       {showShortcutsModal && (
@@ -600,6 +1004,12 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           </div>
         </MyModal>
       )}
+
+      {/* DONATE / BUY ME A COFFEE MODAL */}
+      {showDonateModal && <DonateModal onClose={() => setShowDonateModal(false)} />}
+
+      {/* GOOGLE DRIVE MODAL */}
+      {showGoogleDriveModal && <GoogleDriveModal onClose={() => setShowGoogleDriveModal(false)} />}
     </AppWrapper>
   );
 }

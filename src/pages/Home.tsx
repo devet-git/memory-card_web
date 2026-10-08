@@ -18,6 +18,10 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  @media (max-width: 640px) {
+    gap: 20px;
+  }
 `;
 
 const HeroBanner = styled.div`
@@ -33,19 +37,21 @@ const HeroBanner = styled.div`
   gap: 20px;
 
   @media (max-width: 640px) {
-    padding: 28px 20px;
+    padding: 22px 18px;
+    border-radius: 16px;
+    gap: 16px;
   }
 `;
 
 const HeroTitle = styled.h1`
   font-size: 34px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.25;
   margin: 0;
   letter-spacing: -0.02em;
 
   @media (max-width: 640px) {
-    font-size: 26px;
+    font-size: 22px;
   }
 `;
 
@@ -56,6 +62,11 @@ const HeroSubtitle = styled.p`
   max-width: 900px;
   margin: 0;
   opacity: 0.95;
+
+  @media (max-width: 640px) {
+    font-size: 13px;
+    line-height: 1.5;
+  }
 `;
 
 const HeroActionRow = styled.div`
@@ -63,12 +74,28 @@ const HeroActionRow = styled.div`
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+
+    button {
+      width: 100%;
+    }
+  }
 `;
 
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 18px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 `;
 
 const StatCard = styled.div`
@@ -81,6 +108,12 @@ const StatCard = styled.div`
   gap: 16px;
   box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
   transition: transform 0.2s ease;
+
+  @media (max-width: 640px) {
+    padding: 12px 10px;
+    gap: 10px;
+    border-radius: 12px;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -95,22 +128,42 @@ const StatCard = styled.div`
     justify-content: center;
     font-size: 24px;
     flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      border-radius: 8px;
+    }
   }
 
   .stat-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 
     .stat-value {
       font-size: 24px;
       font-weight: 800;
       color: var(--text-primary, #0f172a);
+      line-height: 1.2;
+
+      @media (max-width: 640px) {
+        font-size: 18px;
+      }
     }
 
     .stat-label {
       font-size: 13px;
       font-weight: 500;
       color: var(--text-secondary, #64748b);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: 640px) {
+        font-size: 11px;
+      }
     }
   }
 `;
@@ -121,11 +174,19 @@ const SectionHeader = styled.div`
   align-items: center;
   margin-bottom: 16px;
 
+  @media (max-width: 640px) {
+    margin-bottom: 12px;
+  }
+
   h2 {
     font-size: 20px;
     font-weight: 700;
     color: var(--text-primary, #0f172a);
     margin: 0;
+
+    @media (max-width: 640px) {
+      font-size: 17px;
+    }
   }
 
   a {
@@ -136,6 +197,10 @@ const SectionHeader = styled.div`
     font-weight: 600;
     color: var(--accent-primary, #3b82f6);
 
+    @media (max-width: 640px) {
+      font-size: 13px;
+    }
+
     &:hover {
       text-decoration: underline;
     }
@@ -144,8 +209,13 @@ const SectionHeader = styled.div`
 
 const DeckGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 22px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 `;
 
 const DeckPreviewCard = styled.div`
@@ -160,6 +230,13 @@ const DeckPreviewCard = styled.div`
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 190px;
 
+  @media (max-width: 640px) {
+    padding: 16px 14px;
+    min-height: auto;
+    gap: 12px;
+    border-radius: 14px;
+  }
+
   &:hover {
     box-shadow: var(--card-shadow-hover, 0 12px 24px -6px rgba(59, 130, 246, 0.15));
     border-color: rgba(59, 130, 246, 0.4);
@@ -171,12 +248,17 @@ const DeckPreviewCard = styled.div`
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 10px;
+    gap: 8px;
 
     .deck-title {
       font-size: 18px;
       font-weight: 700;
       color: var(--text-primary, #0f172a);
       margin: 0;
+
+      @media (max-width: 640px) {
+        font-size: 16px;
+      }
     }
 
     .badge {
@@ -186,6 +268,7 @@ const DeckPreviewCard = styled.div`
       border-radius: 9999px;
       background-color: rgba(59, 130, 246, 0.12);
       color: #2563eb;
+      white-space: nowrap;
     }
   }
 
@@ -195,6 +278,11 @@ const DeckPreviewCard = styled.div`
     line-height: 1.4;
     margin-bottom: 16px;
     flex: 1;
+
+    @media (max-width: 640px) {
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
   }
 
   .deck-footer {
@@ -204,6 +292,17 @@ const DeckPreviewCard = styled.div`
     gap: 8px;
     padding-top: 14px;
     border-top: 1px dashed var(--border-color, #e2e8f0);
+
+    @media (max-width: 640px) {
+      padding-top: 10px;
+      gap: 6px;
+
+      button {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+    }
   }
 `;
 
@@ -211,6 +310,11 @@ const FeatureGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 `;
 
 const FeatureCard = styled.div`
@@ -220,6 +324,11 @@ const FeatureCard = styled.div`
   padding: 20px;
   display: flex;
   gap: 14px;
+
+  @media (max-width: 640px) {
+    padding: 14px;
+    gap: 10px;
+  }
 
   .icon {
     font-size: 24px;

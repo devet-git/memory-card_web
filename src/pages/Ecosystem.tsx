@@ -69,6 +69,10 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 640px) {
+    gap: 16px;
+  }
 `;
 
 const HeaderBanner = styled.div`
@@ -82,6 +86,31 @@ const HeaderBanner = styled.div`
   flex-wrap: wrap;
   gap: 16px;
   box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
+
+  @media (max-width: 640px) {
+    padding: 16px 14px;
+    gap: 12px;
+    border-radius: 14px;
+
+    .left {
+      gap: 10px;
+
+      .icon-box {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+        border-radius: 10px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      p {
+        font-size: 12px;
+      }
+    }
+  }
 
   .left {
     display: flex;
@@ -99,6 +128,7 @@ const HeaderBanner = styled.div`
       justify-content: center;
       font-size: 26px;
       box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+      flex-shrink: 0;
     }
 
     h1 {
@@ -117,11 +147,25 @@ const HeaderBanner = styled.div`
 `;
 
 const FilterTabRow = styled.div`
+  position: sticky;
+  top: 64px;
+  z-index: 80;
+  background: var(--bg-primary, #f8fafc);
+  padding: 8px 0;
   display: flex;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    top: 56px;
+    padding: 6px 0;
+  }
 `;
 
 const FilterTab = styled.button<{ $active: boolean }>`
@@ -134,6 +178,7 @@ const FilterTab = styled.button<{ $active: boolean }>`
   color: ${(props) => (props.$active ? "#ffffff" : "var(--text-secondary, #475569)")};
   border: 1px solid ${(props) => (props.$active ? "var(--accent-primary, #3b82f6)" : "var(--border-color, #e2e8f0)")};
   transition: all 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
     border-color: var(--accent-primary, #3b82f6);
@@ -142,8 +187,13 @@ const FilterTab = styled.button<{ $active: boolean }>`
 
 const AppGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 20px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 
 const AppCard = styled.div`
@@ -157,6 +207,12 @@ const AppCard = styled.div`
   box-shadow: var(--card-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 180px;
+
+  @media (max-width: 640px) {
+    padding: 16px 14px;
+    min-height: auto;
+    border-radius: 14px;
+  }
 
   &:hover {
     transform: translateY(-2px);

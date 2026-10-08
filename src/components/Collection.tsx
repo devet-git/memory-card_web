@@ -27,6 +27,12 @@ const Card = styled.div`
   flex-direction: column;
   gap: 16px;
 
+  @media (max-width: 640px) {
+    padding: 16px 14px;
+    gap: 14px;
+    margin-bottom: 0;
+  }
+
   &:hover {
     box-shadow: var(--card-shadow-hover, 0 12px 24px -6px rgba(59, 130, 246, 0.12));
     border-color: rgba(59, 130, 246, 0.35);
@@ -43,6 +49,7 @@ const HeaderRow = styled.div`
 
 const TitleArea = styled.div`
   flex: 1;
+  min-width: 0;
 `;
 
 const CollectionLink = styled(Link)`
@@ -53,6 +60,12 @@ const CollectionLink = styled(Link)`
   font-weight: 700;
   color: var(--text-primary, #0f172a);
   transition: color 0.15s ease;
+  word-break: break-word;
+
+  @media (max-width: 640px) {
+    font-size: 17px;
+    gap: 8px;
+  }
 
   &:hover {
     color: var(--accent-primary, #3b82f6);
@@ -62,6 +75,10 @@ const CollectionLink = styled(Link)`
     color: #3b82f6;
     font-size: 24px;
     flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      font-size: 20px;
+    }
   }
 `;
 
@@ -81,12 +98,17 @@ const Description = styled.p`
   color: var(--text-secondary, #64748b);
   margin: 6px 0 0 0;
   line-height: 1.4;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 `;
 
 const ProgressBarWrapper = styled.div`
@@ -127,6 +149,18 @@ const StudyActions = styled.div`
   flex-wrap: wrap;
   padding-top: 8px;
   border-top: 1px dashed var(--border-color, #e2e8f0);
+
+  @media (max-width: 640px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    button {
+      width: 100%;
+      padding: 7px 6px;
+      font-size: 12px;
+    }
+  }
 `;
 
 const EditRow = styled.div`
