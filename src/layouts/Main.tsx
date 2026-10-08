@@ -24,6 +24,7 @@ import { MyInput } from "components/MyInput";
 import MemCardLogo from "components/MemCardLogo";
 import DonateModal from "components/DonateModal";
 import GoogleDriveModal from "components/GoogleDriveModal";
+import { downloadTextFile, backupFileName } from "utils/download";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -487,13 +488,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
   const handleExportFile = () => {
     const jsonStr = exportToJSON();
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `memcard-backup-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(jsonStr, backupFileName());
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {

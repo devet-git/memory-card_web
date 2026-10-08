@@ -7,6 +7,7 @@ import Collection from "components/Collection";
 import MyButton from "components/MyButton";
 import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
+import { downloadTextFile, backupFileName } from "utils/download";
 
 const Container = styled.div`
   display: flex;
@@ -225,13 +226,7 @@ export default function CollectionPage() {
 
   const handleExport = () => {
     const jsonStr = exportToJSON();
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `memcard-backup-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile(jsonStr, backupFileName());
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
