@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import {
@@ -1101,13 +1101,20 @@ export default function WordPage() {
   };
 
   // Active words pool for quiz (either all collection words, or only wrong ones during retry)
+  // Recording an answer updates review stats, which gives `words` / `collections` a new identity.
+  // Key the quiz on word *content* so options aren't reshuffled right after the user picks one.
+  const wordsSignature = words.map((w) => `${w.id}|${w.source}|${w.target}`).join("\n");
+  const collectionsRef = useRef(collections);
+  collectionsRef.current = collections;
+
   const activeQuizWords = useMemo(() => {
     if (retryOnlyWordIds && retryOnlyWordIds.size > 0) {
       const filtered = words.filter((w) => retryOnlyWordIds.has(w.id));
       if (filtered.length > 0) return filtered;
     }
     return words;
-  }, [words, retryOnlyWordIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordsSignature, retryOnlyWordIds]);
 
   // Robust Quiz Questions Generator: Always guarantees 4 distinct options randomly chosen from collection
   const quizQuestions = useMemo(() => {
@@ -1125,7 +1132,7 @@ export default function WordPage() {
 
     // Answers from all other collections as extra pool if current collection has < 4 words
     const otherAnswers: string[] = [];
-    collections.forEach((c) => {
+    collectionsRef.current.forEach((c) => {
       c.words?.forEach((w) => {
         const txt = (quizReverseMode ? w.source : w.target)?.trim();
         if (txt) otherAnswers.push(txt);
@@ -1202,9 +1209,9 @@ export default function WordPage() {
         options: finalFour
       };
     });
-    // quizSessionId is a deliberate re-shuffle trigger
+    // quizSessionId is a deliberate re-shuffle trigger; words/collections are tracked via activeQuizWords/collectionsRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeQuizWords, words, collections, quizReverseMode, quizShuffleQuestions, quizSessionId]);
+  }, [activeQuizWords, quizReverseMode, quizShuffleQuestions, quizSessionId]);
 
   const currentQuizQuestion = quizQuestions[quizIndex];
   const quizOptions = currentQuizQuestion ? currentQuizQuestion.options : [];
