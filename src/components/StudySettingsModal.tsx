@@ -97,6 +97,16 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
         </Row>
 
         <Row>
+          <label style={{ fontWeight: 700, fontSize: 14 }}>Ôn ngược thẻ đã thuộc</label>
+          <div>
+            <MyButton variant={settings.reverseReview !== false ? "success" : "secondary"} size="sm" onClick={() => updateSettings({ reverseReview: settings.reverseReview === false })}>
+              {settings.reverseReview !== false ? "Đang bật" : "Đang tắt"}
+            </MyButton>
+          </div>
+          <Hint>Thỉnh thoảng hỏi ngược (nhìn nghĩa, nhớ lại từ) với thẻ bạn đã nhớ từ 7 ngày trở lên, để nhớ chắc cả hai chiều. Lịch ôn vẫn tính chung cho thẻ.</Hint>
+        </Row>
+
+        <Row>
           <label style={{ fontWeight: 700, fontSize: 14 }}>Nhắc học hằng ngày</label>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <MyButton variant={settings.reminderEnabled ? "success" : "secondary"} size="sm" onClick={toggleReminder}>

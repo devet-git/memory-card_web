@@ -81,7 +81,8 @@ const defaultSettings: AppSettings = {
   reminderEnabled: false,
   reminderTime: "20:00",
   autoSync: false,
-  autoSpeak: false
+  autoSpeak: false,
+  reverseReview: true
 };
 
 const CollectionContext = createContext<CollectionContextType>({} as CollectionContextType);

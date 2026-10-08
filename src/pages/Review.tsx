@@ -14,7 +14,11 @@ import { WordItem } from "types";
 interface QueueItem {
   pathname: string;
   wordId: string | number;
+  reversed?: boolean; // ask meaning -> term for well-known cards
 }
+
+const REVERSE_MIN_INTERVAL_DAYS = 7;
+const REVERSE_CHANCE = 0.4;
 
 const Progress = styled.div`
   height: 8px;
@@ -100,12 +104,15 @@ export default function ReviewPage() {
     collections.forEach((c) => {
       if (deckFilter && c.pathname !== deckFilter) return;
       c.words.forEach((w) => {
-        if (isDue(w, now)) due.push({ pathname: c.pathname, wordId: w.id });
+        if (isDue(w, now)) {
+          const reversed = settings.reverseReview !== false && (w.intervalDays || 0) >= REVERSE_MIN_INTERVAL_DAYS && Math.random() < REVERSE_CHANCE;
+          due.push({ pathname: c.pathname, wordId: w.id, reversed });
+        }
         else if (isNewCard(w)) fresh.push({ pathname: c.pathname, wordId: w.id });
       });
     });
     return [...due, ...fresh.slice(0, NEW_CARDS_PER_SESSION)];
-  }, [collections, deckFilter]);
+  }, [collections, deckFilter, settings.reverseReview]);
 
   // The queue is frozen at session start; "Quên" cards are appended again at the end
   const [queue, setQueue] = useState<QueueItem[]>(buildQueue);
@@ -226,19 +233,20 @@ export default function ReviewPage() {
           </Progress>
           <MutedText>
             Thẻ {Math.min(position + 1, total)}/{total} • Đã xong {done}
+            {current.reversed && " • Ôn ngược: nhìn nghĩa, nhớ lại từ"}
           </MutedText>
 
           <FlipCard
             key={`${currentWord.id}-${reveal}`}
-            front={currentWord.source}
-            back={currentWord.target}
-            phonetic={currentWord.phonetic}
+            front={current.reversed ? currentWord.target : currentWord.source}
+            back={current.reversed ? currentWord.source : currentWord.target}
+            phonetic={current.reversed ? undefined : currentWord.phonetic}
             example={currentWord.example}
             image={currentWord.image}
             mnemonic={currentWord.mnemonic}
             flipped={flipped}
             onFlipChange={setFlipped}
-            autoSpeak={settings.autoSpeak}
+            autoSpeak={settings.autoSpeak && !current.reversed}
             status={currentWord.status}
             height="clamp(300px, 42vh, 380px)"
           />

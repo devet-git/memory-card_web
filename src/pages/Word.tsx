@@ -28,6 +28,8 @@ import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
 import { speakWord } from "utils/speech";
 import { Grade } from "utils/srs";
+import useWordProfiles from "hooks/useWordProfiles";
+import { pickDistractors } from "utils/distractors";
 import AutoFillButton from "components/AutoFillButton";
 import ActionMenu from "components/ActionMenu";
 import WordSuggest from "components/WordSuggest";
@@ -1242,6 +1244,7 @@ export default function WordPage() {
   // Recording an answer updates review stats, which gives `words` / `collections` a new identity.
   // Key the quiz on word *content* so options aren't reshuffled right after the user picks one.
   const wordsSignature = words.map((w) => `${w.id}|${w.source}|${w.target}`).join("\n");
+  const { profiles: wordProfiles, ready: profilesReady } = useWordProfiles(words);
   const collectionsRef = useRef(collections);
   collectionsRef.current = collections;
 
@@ -1263,10 +1266,14 @@ export default function WordPage() {
       pool = shuffleArray(pool);
     }
 
-    // All available answers in the current collection
-    const currentCollAnswers = words
-      .map((w) => (quizReverseMode ? w.source : w.target)?.trim())
-      .filter((txt): txt is string => Boolean(txt));
+    // All available answers in the current collection, with the dictionary profile of their card
+    // (distractors are chosen to resemble the right answer: same part of speech and popularity)
+    const currentCollCandidates = words
+      .map((w) => ({
+        text: ((quizReverseMode ? w.source : w.target) || "").trim(),
+        profile: wordProfiles.current.get(String(w.id))
+      }))
+      .filter((c) => Boolean(c.text));
 
     // Answers from all other collections as extra pool if current collection has < 4 words
     const otherAnswers: string[] = [];
@@ -1294,19 +1301,11 @@ export default function WordPage() {
       const prompt = (quizReverseMode ? word.target : word.source).trim();
       const correctAnswer = (quizReverseMode ? word.source : word.target).trim();
 
-      // 1. Pick distractors from CURRENT collection first (all other words in this collection)
-      const collectionCandidates = currentCollAnswers.filter(
-        (ans) => ans.toLowerCase() !== correctAnswer.toLowerCase()
+      // 1. Pick the most similar-looking wrong answers from the CURRENT collection first
+      const distractors: string[] = pickDistractors(
+        { text: correctAnswer, profile: wordProfiles.current.get(String(word.id)) },
+        currentCollCandidates
       );
-      const uniqueCollectionCandidates = Array.from(new Set(collectionCandidates));
-      const shuffledCollectionCandidates = shuffleArray(uniqueCollectionCandidates);
-
-      const distractors: string[] = [];
-      for (const item of shuffledCollectionCandidates) {
-        if (distractors.length < 3 && !distractors.includes(item)) {
-          distractors.push(item);
-        }
-      }
 
       // 2. If collection has fewer than 3 distractors, fill from other collections
       if (distractors.length < 3) {
@@ -1349,7 +1348,7 @@ export default function WordPage() {
     });
     // quizSessionId is a deliberate re-shuffle trigger; words/collections are tracked via activeQuizWords/collectionsRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeQuizWords, quizReverseMode, quizShuffleQuestions, quizSessionId]);
+  }, [activeQuizWords, quizReverseMode, quizShuffleQuestions, quizSessionId, profilesReady]);
 
   const currentQuizQuestion = quizQuestions[quizIndex];
   const quizOptions = currentQuizQuestion ? currentQuizQuestion.options : [];

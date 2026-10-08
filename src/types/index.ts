@@ -52,4 +52,5 @@ export interface AppSettings {
   reminderTime?: string; // 'HH:MM'
   autoSync?: boolean; // auto upload to Google Drive
   autoSpeak?: boolean; // read the front of a card aloud when it appears
+  reverseReview?: boolean; // sometimes show well-known cards back-to-front (meaning -> term)
 }
