@@ -9,6 +9,7 @@ import {
   MdOutlineSync
 } from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
+import CloseFooter from "components/CloseFooter";
 import MyModal from "./MyModal";
 import MyButton from "./MyButton";
 import {
@@ -303,6 +304,7 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
       title="Đồng bộ Google Drive (Cloud Sync)"
       onClose={onClose}
       maxWidth="560px"
+      footer={<CloseFooter onClose={onClose} />}
     >
       <Container>
         <InfoBox>
@@ -410,11 +412,6 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
           </>
         )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-          <MyButton variant="ghost" onClick={onClose}>
-            Đóng
-          </MyButton>
-        </div>
       </Container>
     </MyModal>
   );

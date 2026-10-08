@@ -1,6 +1,8 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import MyButton from "components/MyButton";
 import { SpeakSpinner } from "hooks/useSpeak";
+import useAIJob from "hooks/useAIJob";
+import AICancelDialog from "components/ai/AICancelDialog";
 import { CardLoader } from "components/Loader";
 import RequireAI from "components/ai/RequireAI";
 import { AIConfig, askAIJson } from "utils/ai";
@@ -24,29 +26,26 @@ function Practice({ config, words: liveWords, onAnswer }: StudyModeProps & { con
   const order = useMemo(() => shuffled(words), [words, round]); // eslint-disable-line react-hooks/exhaustive-deps
   const [index, setIndex] = useState(0);
   const [sentence, setSentence] = useState("");
-  const [loading, setLoading] = useState(false);
+  const job = useAIJob();
+  const loading = job.busy;
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
-  const abortRef = useRef<AbortController | null>(null);
 
   const current = order[index];
 
   const check = async () => {
     if (!current || !sentence.trim() || loading) return;
-    setLoading(true);
     setError(null);
-    abortRef.current = new AbortController();
     try {
       const prompt = `Target word: "${current.source}" (meaning: ${current.target})\nStudent sentence: "${sentence.trim().slice(0, 500)}"`;
-      const result = await askAIJson<Verdict>(prompt, config, { system: SYSTEM, maxTokens: 400, signal: abortRef.current.signal });
+      const result = await job.run((signal) => askAIJson<Verdict>(prompt, config, { system: SYSTEM, maxTokens: 400, signal }));
+      if (result === undefined) return; // cancelled on purpose
       setVerdict(result);
       if (result.correct) setScore((s) => s + 1);
       onAnswer(current.id, Boolean(result.correct));
     } catch (err: any) {
       setError(err?.message || "AI thất bại");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -101,6 +100,7 @@ function Practice({ config, words: liveWords, onAnswer }: StudyModeProps & { con
           style={{ minHeight: 90, width: "100%" }}
         />
         {loading && <CardLoader compact label="AI đang chấm câu của bạn" />}
+      <AICancelDialog job={job} />
         {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
         {verdict && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left", width: "100%" }}>
@@ -119,9 +119,15 @@ function Practice({ config, words: liveWords, onAnswer }: StudyModeProps & { con
           </MyButton>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            <MyButton variant="ghost" onClick={next} disabled={loading}>
-              Bỏ qua
-            </MyButton>
+            {loading ? (
+              <MyButton variant="danger" onClick={() => job.requestCancel()} title="Dừng yêu cầu AI đang chạy">
+                Hủy yêu cầu AI
+              </MyButton>
+            ) : (
+              <MyButton variant="ghost" onClick={next}>
+                Bỏ qua
+              </MyButton>
+            )}
             <MyButton variant="primary" icon={loading ? <SpeakSpinner /> : undefined} onClick={check} disabled={!sentence.trim() || loading}>
               {loading ? "AI đang chấm..." : "Nhờ AI chấm"}
             </MyButton>

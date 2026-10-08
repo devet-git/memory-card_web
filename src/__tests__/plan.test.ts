@@ -69,3 +69,15 @@ describe("buildDailyPlan", () => {
     expect(off.items.every((i) => !i.reversed)).toBe(true);
   });
 });
+
+describe("buildDailyPlan with several decks", () => {
+  const decks = [deck("a", [w("a1")]), deck("b", [w("b1")]), deck("c", [w("c1")])];
+
+  test("a list of decks limits the session to those decks", () => {
+    expect(buildDailyPlan(decks, { now: NOW, deck: ["a", "c"] }).items.map((i) => i.wordId).sort()).toEqual(["a1", "c1"]);
+  });
+
+  test("an empty list means all decks", () => {
+    expect(buildDailyPlan(decks, { now: NOW, deck: [] }).items).toHaveLength(3);
+  });
+});

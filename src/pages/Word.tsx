@@ -2518,10 +2518,18 @@ export default function WordPage() {
       {/* MODAL: ADD SINGLE WORD */}
       {showAddSingleModal && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowAddSingleModal(false)}>
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="add-word-form" disabled={!newSource.trim() || !newTarget.trim()}>
+                Thêm vào bộ thẻ
+              </MyButton></div>
+          }
           title="Thêm thẻ từ vựng mới"
           onClose={() => setShowAddSingleModal(false)}
         >
-          <form onSubmit={handleAddSingleWord} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <form id="add-word-form" onSubmit={handleAddSingleWord} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
                 Mặt trước (Từ vựng / Câu hỏi) *
@@ -2620,14 +2628,6 @@ export default function WordPage() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-              <MyButton variant="ghost" onClick={() => setShowAddSingleModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit" disabled={!newSource.trim() || !newTarget.trim()}>
-                Thêm vào bộ thẻ
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}
@@ -2678,11 +2678,19 @@ export default function WordPage() {
       {/* MODAL: BULK IMPORT WORDS */}
       {showBulkModal && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowBulkModal(false)}>
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="bulk-import-form" disabled={!bulkText.trim()}>
+                Nạp từ vựng vào bộ thẻ
+              </MyButton></div>
+          }
           title="Nhập từ vựng hàng loạt (Bulk Import)"
           onClose={() => setShowBulkModal(false)}
           maxWidth="600px"
         >
-          <form onSubmit={handleBulkImport} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <form id="bulk-import-form" onSubmit={handleBulkImport} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
               Dán danh sách từ vựng theo cấu trúc mỗi dòng một thẻ: <code>Từ vựng - Định nghĩa - Ví dụ</code> hoặc <code>Từ vựng : Định nghĩa</code>
             </p>
@@ -2728,14 +2736,6 @@ export default function WordPage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <MyButton variant="ghost" onClick={() => setShowBulkModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit" disabled={!bulkText.trim()}>
-                Nạp từ vựng vào bộ thẻ
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}
@@ -2743,13 +2743,27 @@ export default function WordPage() {
       {/* MODAL: EDIT WORD */}
       {showEditModal && editingWord && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton
+                variant="ghost"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingWord(null);
+                }}
+              >
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="edit-word-form">
+                Lưu thay đổi
+              </MyButton></div>
+          }
           title="Chỉnh sửa thẻ từ vựng"
           onClose={() => {
             setShowEditModal(false);
             setEditingWord(null);
           }}
         >
-          <form onSubmit={handleSaveEditWord} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <form id="edit-word-form" onSubmit={handleSaveEditWord} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
                 Mặt trước (Thuật ngữ) *
@@ -2864,20 +2878,6 @@ export default function WordPage() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-              <MyButton
-                variant="ghost"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingWord(null);
-                }}
-              >
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit">
-                Lưu thay đổi
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}

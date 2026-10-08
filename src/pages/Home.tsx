@@ -12,6 +12,8 @@ import { MdQuiz, MdOutlineArrowForward, MdVolumeUp, MdKeyboardAlt } from "react-
 import useCollectionContext from "contexts/Collection";
 import MyButton from "components/MyButton";
 import MyModal from "components/MyModal";
+import SearchSelect from "components/SearchSelect";
+import { categoryOptions } from "utils/categories";
 import { MyInput, MyTextarea } from "components/MyInput";
 import ActivityHeatmap from "components/ActivityHeatmap";
 import { Panel } from "components/ui";
@@ -693,10 +695,18 @@ export default function HomePage() {
       {/* CREATE MODAL */}
       {showAddModal && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowAddModal(false)}>
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="create-deck-form">
+                Tạo bộ thẻ
+              </MyButton></div>
+          }
           title="Tạo bộ sưu tập thẻ mới"
           onClose={() => setShowAddModal(false)}
         >
-          <form onSubmit={handleCreateDeck} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form id="create-deck-form" onSubmit={handleCreateDeck} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {formError && (
               <div style={{ color: "#ef4444", fontSize: "13px", fontWeight: "600" }}>
                 {formError}
@@ -722,10 +732,14 @@ export default function HomePage() {
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
                 Chủ đề / Thể loại
               </label>
-              <MyInput
-                placeholder="VD: Tiếng Anh, Lập trình, Y học, Lịch sử..."
+              <SearchSelect
+                creatable
                 value={newDeckCategory}
-                onChange={(e) => setNewDeckCategory(e.target.value)}
+                onChange={setNewDeckCategory}
+                options={categoryOptions(collections)}
+                placeholder="Chọn hoặc gõ thể loại mới"
+                searchPlaceholder="Tìm thể loại..."
+                ariaLabel="Thể loại"
               />
             </div>
 
@@ -740,14 +754,6 @@ export default function HomePage() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-              <MyButton variant="ghost" onClick={() => setShowAddModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit">
-                Tạo bộ thẻ
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}

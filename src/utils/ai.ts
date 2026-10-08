@@ -9,22 +9,25 @@ export interface AIConfig {
   model: string;
 }
 
-export const AI_PROVIDERS: Record<AIProvider, { label: string; defaultModel: string; keyHint: string; keyUrl: string }> = {
+export const AI_PROVIDERS: Record<AIProvider, { label: string; defaultModel: string; models: string[]; keyHint: string; keyUrl: string }> = {
   anthropic: {
     label: "Anthropic (Claude)",
     defaultModel: "claude-haiku-5-5",
+    models: ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"],
     keyHint: "sk-ant-...",
     keyUrl: "https://console.anthropic.com/settings/keys"
   },
   openai: {
     label: "OpenAI (GPT)",
     defaultModel: "gpt-4o-mini",
+    models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"],
     keyHint: "sk-...",
     keyUrl: "https://platform.openai.com/api-keys"
   },
   gemini: {
     label: "Google (Gemini)",
     defaultModel: "gemini-2.0-flash",
+    models: ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"],
     keyHint: "AIza...",
     keyUrl: "https://aistudio.google.com/apikey"
   }

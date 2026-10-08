@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import MyButton from "components/MyButton";
 import AISettingsModal from "components/AISettingsModal";
 import { SpeakSpinner } from "hooks/useSpeak";
+import useAIJob from "hooks/useAIJob";
+import AICancelDialog from "components/ai/AICancelDialog";
 import useAIConfig from "hooks/useAIConfig";
 import { askAIJson } from "utils/ai";
 import { LookupResult } from "utils/dictionary";
@@ -19,7 +21,8 @@ Return one JSON object: {"translation": concise Vietnamese meaning, "phonetic": 
 /** Asks the user's AI to fill meaning, phonetic, example and a memory hint for a card. */
 export default function AIEnrichButton({ word, meaning, onResult }: Props) {
   const config = useAIConfig();
-  const [loading, setLoading] = useState(false);
+  const job = useAIJob();
+  const loading = job.busy;
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -29,11 +32,11 @@ export default function AIEnrichButton({ word, meaning, onResult }: Props) {
       return;
     }
     if (loading || !word.trim()) return;
-    setLoading(true);
     setError(null);
     try {
       const prompt = `Term: "${word.trim().slice(0, 200)}"${meaning?.trim() ? `\nIntended meaning: "${meaning.trim().slice(0, 200)}"` : ""}`;
-      const result = await askAIJson<LookupResult>(prompt, config, { system: SYSTEM, maxTokens: 400 });
+      const result = await job.run((signal) => askAIJson<LookupResult>(prompt, config, { system: SYSTEM, maxTokens: 400, signal }));
+      if (result === undefined) return; // cancelled on purpose
       onResult({
         translation: result.translation || undefined,
         phonetic: result.phonetic || undefined,
@@ -42,8 +45,6 @@ export default function AIEnrichButton({ word, meaning, onResult }: Props) {
       });
     } catch (err: any) {
       setError(err?.message || "AI thất bại");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -62,6 +63,12 @@ export default function AIEnrichButton({ word, meaning, onResult }: Props) {
         {loading ? "AI đang soạn..." : config ? "Gợi ý bằng AI" : "Gợi ý bằng AI 🔒"}
       </MyButton>
       </div>
+      {loading && (
+        <MyButton type="button" variant="ghost" size="sm" onClick={() => job.requestCancel()} title="Dừng yêu cầu AI đang chạy">
+          Hủy
+        </MyButton>
+      )}
+      <AICancelDialog job={job} />
       {!config && <span style={{ fontSize: 12, color: "#b45309" }}>Cần nhập API key AI để dùng — bấm nút để thêm.</span>}
       {error && <span style={{ color: "#dc2626", fontSize: 12 }}>{error}</span>}
       {showSettings && <AISettingsModal onClose={() => setShowSettings(false)} />}

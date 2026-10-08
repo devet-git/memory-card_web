@@ -162,6 +162,7 @@ export interface Props {
   fullWidth?: boolean;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
+  form?: string; // id of the <form> a submit button belongs to (lets it live in a modal footer)
 }
 
 export default function MyButton({
@@ -177,11 +178,13 @@ export default function MyButton({
   size = "md",
   fullWidth,
   disabled,
-  type = "button"
+  type = "button",
+  form
 }: Props) {
   return (
     <StyledButton
       type={type}
+      form={form}
       $variant={variant}
       $size={size}
       $fullWidth={fullWidth}

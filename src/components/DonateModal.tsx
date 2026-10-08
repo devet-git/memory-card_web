@@ -8,6 +8,7 @@ import {
 } from "react-icons/md";
 import { IoHeart } from "react-icons/io5";
 import MyModal from "./MyModal";
+import CloseFooter from "./CloseFooter";
 import MyButton from "./MyButton";
 import { MyInput } from "./MyInput";
 import MemCardLogo from "./MemCardLogo";
@@ -338,6 +339,7 @@ export default function DonateModal({ onClose }: DonateModalProps) {
       title="Ủng hộ tác giả (Buy Me a Coffee) ☕"
       onClose={onClose}
       maxWidth="560px"
+      footer={<CloseFooter onClose={onClose} />}
     >
       <Container>
         <HeroBanner>

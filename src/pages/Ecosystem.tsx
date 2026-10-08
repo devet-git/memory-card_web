@@ -486,10 +486,18 @@ export default function EcosystemPage() {
       {/* ADD / EDIT MODAL */}
       {showConfigModal && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowConfigModal(false)}>
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="save-app-form" disabled={!formName.trim() || !formUrl.trim()}>
+                {editingApp ? "Cập nhật cấu hình" : "Lưu ứng dụng"}
+              </MyButton></div>
+          }
           title={editingApp ? "Chỉnh sửa liên kết ứng dụng" : "Thêm ứng dụng liên quan mới"}
           onClose={() => setShowConfigModal(false)}
         >
-          <form onSubmit={handleSaveApp} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <form id="save-app-form" onSubmit={handleSaveApp} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
                 Tên ứng dụng / Trang web *
@@ -548,14 +556,6 @@ export default function EcosystemPage() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-              <MyButton variant="ghost" onClick={() => setShowConfigModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit" disabled={!formName.trim() || !formUrl.trim()}>
-                {editingApp ? "Cập nhật cấu hình" : "Lưu ứng dụng"}
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}

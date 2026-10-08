@@ -7,6 +7,8 @@ import Collection from "components/Collection";
 import MyButton from "components/MyButton";
 import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
+import SearchSelect from "components/SearchSelect";
+import { categoryOptions } from "utils/categories";
 import { downloadTextFile, backupFileName } from "utils/download";
 
 const Container = styled.div`
@@ -350,10 +352,18 @@ export default function CollectionPage() {
       {/* CREATE MODAL */}
       {showAddModal && (
         <MyModal
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowAddModal(false)}>
+                Hủy
+              </MyButton>
+              <MyButton variant="primary" type="submit" form="create-collection-form">
+                Tạo bộ sưu tập
+              </MyButton></div>
+          }
           title="Tạo bộ sưu tập thẻ mới"
           onClose={() => setShowAddModal(false)}
         >
-          <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form id="create-collection-form" onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {formError && (
               <div style={{ color: "#ef4444", fontSize: "13px", fontWeight: "600" }}>
                 {formError}
@@ -379,10 +389,14 @@ export default function CollectionPage() {
               <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 600 }}>
                 Chủ đề / Phân loại
               </label>
-              <MyInput
-                placeholder="VD: Tiếng Anh, Lập trình, Tiếng Nhật..."
+              <SearchSelect
+                creatable
                 value={newDeckCategory}
-                onChange={(e) => setNewDeckCategory(e.target.value)}
+                onChange={setNewDeckCategory}
+                options={categoryOptions(collections)}
+                placeholder="Chọn hoặc gõ thể loại mới"
+                searchPlaceholder="Tìm thể loại..."
+                ariaLabel="Thể loại"
               />
             </div>
 
@@ -397,14 +411,6 @@ export default function CollectionPage() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-              <MyButton variant="ghost" onClick={() => setShowAddModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit">
-                Tạo bộ sưu tập
-              </MyButton>
-            </div>
           </form>
         </MyModal>
       )}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import MyModal from "components/MyModal";
+import CloseFooter from "components/CloseFooter";
 import MyButton from "components/MyButton";
 import { MyInput } from "components/MyInput";
 import useCollectionContext from "contexts/Collection";
@@ -67,7 +68,7 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
   };
 
   return (
-    <MyModal title="Cài đặt học tập" onClose={onClose} maxWidth="520px">
+    <MyModal title="Cài đặt học tập" onClose={onClose} maxWidth="520px" footer={<CloseFooter onClose={onClose} />}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {message && (
           <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(245, 158, 11, 0.15)", color: "#b45309", fontSize: 13 }}>

@@ -3,6 +3,7 @@ import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { MyInput } from "components/MyInput";
 import { CollectionItem } from "types";
+import SearchSelect from "components/SearchSelect";
 
 interface Props {
   mode: "move" | "copy";
@@ -50,20 +51,18 @@ export default function TransferWordsModal({ mode, count, currentPathname, colle
           {mode === "move" ? "Các thẻ sẽ được chuyển (giữ nguyên tiến độ học)." : "Các thẻ sẽ được nhân bản sang bộ đích."} Thẻ có mặt trước đã tồn
           tại ở bộ đích sẽ được bỏ qua.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflow: "auto" }}>
-          {others.map((c) => (
-            <label key={c.pathname} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", border: "1px solid var(--border-color, #e2e8f0)", borderRadius: 10, cursor: "pointer" }}>
-              <input type="radio" name="target-deck" checked={choice === c.pathname} onChange={() => setChoice(c.pathname)} />
-              <span style={{ fontSize: 14 }}>
-                <strong>{c.name}</strong> <span style={{ color: "var(--text-muted)" }}>• {c.words.length} thẻ</span>
-              </span>
-            </label>
-          ))}
-          <label style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", border: "1px dashed var(--border-color, #cbd5e1)", borderRadius: 10, cursor: "pointer" }}>
-            <input type="radio" name="target-deck" checked={choice === NEW_DECK} onChange={() => setChoice(NEW_DECK)} />
-            <span style={{ fontSize: 14, fontWeight: 600 }}>+ Tạo bộ thẻ mới</span>
-          </label>
-        </div>
+        <SearchSelect
+          value={choice}
+          onChange={setChoice}
+          options={[
+            ...others.map((c) => ({ value: c.pathname, label: c.name, description: `${c.words.length} thẻ${c.category ? ` • ${c.category}` : ""}` })),
+            { value: NEW_DECK, label: "+ Tạo bộ thẻ mới" }
+          ]}
+          placeholder="Chọn bộ thẻ đích"
+          searchPlaceholder="Tìm bộ thẻ..."
+          emptyText="Không có bộ thẻ nào khớp"
+          ariaLabel="Bộ thẻ đích"
+        />
         {choice === NEW_DECK && <MyInput value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Tên bộ thẻ mới" autoFocus />}
         {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
       </div>

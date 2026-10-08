@@ -3,6 +3,7 @@ import styled from "styled-components";
 import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { MyInput } from "components/MyInput";
+import SearchSelect from "components/SearchSelect";
 import { SpeakSpinner } from "hooks/useSpeak";
 import useAIConfig from "hooks/useAIConfig";
 import { AI_PROVIDERS, AIProvider, askAI, saveAIConfig } from "utils/ai";
@@ -248,8 +249,20 @@ export default function AISettingsModal({ onClose }: Props) {
           <h4>
             <span className="step">3</span> Model <span style={{ fontWeight: 400, fontSize: 12, color: "var(--text-secondary)" }}>(tùy chọn)</span>
           </h4>
-          <div style={{ display: "flex", gap: 8 }}>
-            <MyInput value={model} onChange={(e) => setModel(e.target.value)} placeholder={info.defaultModel} spellCheck={false} />
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <SearchSelect
+              creatable
+              value={model}
+              onChange={setModel}
+              options={Array.from(new Set([...info.models, model].filter(Boolean))).map((m) => ({
+                value: m,
+                label: m,
+                description: m === info.defaultModel ? "Mặc định" : undefined
+              }))}
+              placeholder={info.defaultModel}
+              searchPlaceholder="Tìm hoặc gõ tên model..."
+              ariaLabel="Model AI"
+            />
             <MyButton variant="secondary" size="sm" onClick={() => setModel(info.defaultModel)} disabled={model === info.defaultModel}>
               Mặc định
             </MyButton>

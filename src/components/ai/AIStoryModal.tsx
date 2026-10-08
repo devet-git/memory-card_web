@@ -5,6 +5,10 @@ import { MyInput } from "components/MyInput";
 import { SpeakSpinner, useSpeak } from "hooks/useSpeak";
 import { CardLoader } from "components/Loader";
 import RequireAI from "components/ai/RequireAI";
+import useAIJob, { AI_CANCEL_MESSAGE } from "hooks/useAIJob";
+import useAIConfig from "hooks/useAIConfig";
+import AICancelDialog from "components/ai/AICancelDialog";
+import CloseFooter from "components/CloseFooter";
 import { AIConfig, askAIJson } from "utils/ai";
 import { WordItem } from "types";
 import { MdVolumeUp } from "react-icons/md";
@@ -29,7 +33,11 @@ Return JSON: {"title": short English title, "story": the passage in English, "tr
 /** Words you struggle with first, then least-practised ones. */
 function pickWords(words: WordItem[], count: number): WordItem[] {
   return [...words]
-    .sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0) || (a.reviewCount || 0) - (b.reviewCount || 0))
+    .sort(
+      (a, b) =>
+        (b.wrongCount || 0) - (a.wrongCount || 0) ||
+        (a.reviewCount || 0) - (b.reviewCount || 0),
+    )
     .slice(0, count);
 }
 
@@ -39,21 +47,39 @@ function Highlighted({ text }: { text: string }) {
     <>
       {parts.map((p, i) =>
         p.startsWith("**") && p.endsWith("**") ? (
-          <mark key={i} style={{ background: "rgba(59,130,246,0.18)", color: "inherit", borderRadius: 4, padding: "0 3px", fontWeight: 700 }}>
+          <mark
+            key={i}
+            style={{
+              background: "rgba(59,130,246,0.18)",
+              color: "inherit",
+              borderRadius: 4,
+              padding: "0 3px",
+              fontWeight: 700,
+            }}
+          >
             {p.slice(2, -2)}
           </mark>
         ) : (
           <React.Fragment key={i}>{p}</React.Fragment>
-        )
+        ),
       )}
     </>
   );
 }
 
-function Writer({ config, words }: { config: AIConfig; words: WordItem[] }) {
+function Writer({
+  config,
+  words,
+  onClose,
+}: {
+  config: AIConfig;
+  words: WordItem[];
+  onClose: () => void;
+}) {
   const [count, setCount] = useState(Math.min(6, Math.max(3, words.length)));
   const [level, setLevel] = useState(LEVELS[1]);
-  const [loading, setLoading] = useState(false);
+  const job = useAIJob();
+  const loading = job.busy;
   const [error, setError] = useState<string | null>(null);
   const [story, setStory] = useState<Story | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -63,77 +89,117 @@ function Writer({ config, words }: { config: AIConfig; words: WordItem[] }) {
 
   const generate = async () => {
     if (loading || chosen.length === 0) return;
-    setLoading(true);
     setError(null);
     try {
       const list = chosen.map((w) => `${w.source} (${w.target})`).join("\n");
-      const result = await askAIJson<Story>(`Level: ${level}\nWords to use:\n${list}`, config, { system: SYSTEM, maxTokens: 1500 });
-      if (!result?.story) throw new Error("AI không tạo được đoạn văn. Hãy thử lại.");
+      const result = await job.run((signal) =>
+        askAIJson<Story>(`Level: ${level}\nWords to use:\n${list}`, config, {
+          system: SYSTEM,
+          maxTokens: 1500,
+          signal,
+        }),
+      );
+      if (result === undefined) return; // cancelled on purpose
+      if (!result?.story)
+        throw new Error("AI không tạo được đoạn văn. Hãy thử lại.");
       setStory(result);
       setShowTranslation(false);
     } catch (err: any) {
       setError(err?.message || "Tạo đoạn văn thất bại");
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (words.length < 3) return <p style={{ margin: 0 }}>Cần ít nhất 3 thẻ trong bộ để tạo đoạn văn ôn từ.</p>;
+  const tooFew = words.length < 3;
+  const plain = story ? story.story.replace(/\*\*/g, "") : "";
 
-  if (story) {
-    const plain = story.story.replace(/\*\*/g, "");
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h3 style={{ margin: 0 }}>{story.title}</h3>
-        <p style={{ margin: 0, lineHeight: 1.7, fontSize: 16 }}>
-          <Highlighted text={story.story} />
+  const body = tooFew ? (
+    <p style={{ margin: 0 }}>
+      Cần ít nhất 3 thẻ trong bộ để tạo đoạn văn ôn từ.
+    </p>
+  ) : story ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <h3 style={{ margin: 0 }}>{story.title}</h3>
+      <p style={{ margin: 0, lineHeight: 1.7, fontSize: 16 }}>
+        <Highlighted text={story.story} />
+      </p>
+      {showTranslation && (
+        <p
+          style={{
+            margin: 0,
+            lineHeight: 1.6,
+            color: "var(--text-secondary)",
+            borderTop: "1px dashed var(--border-color)",
+            paddingTop: 10,
+          }}
+        >
+          <Highlighted text={story.translation} />
         </p>
-        {showTranslation && (
-          <p style={{ margin: 0, lineHeight: 1.6, color: "var(--text-secondary)", borderTop: "1px dashed var(--border-color)", paddingTop: 10 }}>
-            <Highlighted text={story.translation} />
-          </p>
-        )}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <MyButton
-            variant="ghost"
-            size="sm"
-            icon={isLoading("story") ? <SpeakSpinner /> : <MdVolumeUp />}
-            onClick={() => speak("story", plain)}
-          >
-            Nghe đoạn văn
-          </MyButton>
-          <MyButton variant="ghost" size="sm" onClick={() => setShowTranslation((v) => !v)}>
-            {showTranslation ? "Ẩn bản dịch" : "Xem bản dịch"}
-          </MyButton>
-          <MyButton variant="secondary" size="sm" onClick={() => setStory(null)}>
-            ← Tạo đoạn khác
-          </MyButton>
-        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <MyButton
+          variant="ghost"
+          size="sm"
+          icon={isLoading("story") ? <SpeakSpinner /> : <MdVolumeUp />}
+          onClick={() => speak("story", plain)}
+        >
+          Nghe đoạn văn
+        </MyButton>
+        <MyButton
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowTranslation((v) => !v)}
+        >
+          {showTranslation ? "Ẩn bản dịch" : "Xem bản dịch"}
+        </MyButton>
       </div>
-    );
-  }
-
-  return (
+    </div>
+  ) : (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
-        AI viết một đoạn văn ngắn dùng các từ bạn hay sai hoặc ít ôn nhất để ôn từ trong ngữ cảnh.
+        AI viết một đoạn văn ngắn dùng các từ bạn hay sai hoặc ít ôn nhất để ôn
+        từ trong ngữ cảnh.
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 120px" }}>
-          <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 600 }}>Số từ (3-10)</label>
+          <label
+            style={{
+              display: "block",
+              marginBottom: 6,
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Số từ (3-10)
+          </label>
           <MyInput
             type="number"
             min={3}
             max={10}
             value={count}
-            onChange={(e) => setCount(Math.min(10, Math.max(3, Number(e.target.value) || 3)))}
+            onChange={(e) =>
+              setCount(Math.min(10, Math.max(3, Number(e.target.value) || 3)))
+            }
           />
         </div>
         <div style={{ flex: "2 1 220px" }}>
-          <label style={{ display: "block", marginBottom: 6, fontSize: 14, fontWeight: 600 }}>Độ khó</label>
+          <label
+            style={{
+              display: "block",
+              marginBottom: 6,
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Độ khó
+          </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {LEVELS.map((l) => (
-              <MyButton key={l} size="sm" variant={level === l ? "primary" : "secondary"} onClick={() => setLevel(l)}>
+              <MyButton
+                key={l}
+                size="sm"
+                variant={level === l ? "primary" : "secondary"}
+                onClick={() => setLevel(l)}
+              >
                 {l}
               </MyButton>
             ))}
@@ -145,19 +211,86 @@ function Writer({ config, words }: { config: AIConfig; words: WordItem[] }) {
       </div>
       {loading && <CardLoader compact label="AI đang viết đoạn văn" />}
       {error && <div style={{ color: "#dc2626", fontSize: 13 }}>{error}</div>}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <MyButton variant="primary" icon={loading ? <SpeakSpinner /> : undefined} onClick={generate} disabled={loading}>
-          {loading ? "AI đang viết..." : "Viết đoạn văn"}
-        </MyButton>
-      </div>
     </div>
+  );
+
+  const footer = tooFew ? (
+    <CloseFooter onClose={onClose} />
+  ) : story ? (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+      <MyButton variant="secondary" size="sm" onClick={() => setStory(null)}>
+        ← Tạo đoạn khác
+      </MyButton>
+      <MyButton variant="primary" size="sm" onClick={onClose}>
+        Đóng
+      </MyButton>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10,
+        flexWrap: "wrap",
+      }}
+    >
+      {loading ? (
+        <MyButton
+          variant="danger"
+          onClick={() => job.requestCancel()}
+          title="Dừng yêu cầu AI đang chạy"
+        >
+          Hủy yêu cầu AI
+        </MyButton>
+      ) : (
+        <MyButton variant="ghost" onClick={onClose}>
+          Hủy
+        </MyButton>
+      )}
+      <MyButton
+        variant="primary"
+        icon={loading ? <SpeakSpinner /> : undefined}
+        onClick={generate}
+        disabled={loading}
+      >
+        {loading ? "AI đang viết..." : "Viết đoạn văn"}
+      </MyButton>
+    </div>
+  );
+
+  return (
+    <MyModal
+      title="Đoạn văn ôn từ (AI)"
+      onClose={onClose}
+      maxWidth="620px"
+      footer={footer}
+      guard={{
+        when: loading,
+        title: "Hủy yêu cầu AI?",
+        message: AI_CANCEL_MESSAGE,
+        confirmLabel: "Hủy và đóng",
+        stayLabel: "Tiếp tục chờ",
+      }}
+    >
+      {body}
+      <AICancelDialog job={job} />
+    </MyModal>
   );
 }
 
 export default function AIStoryModal({ words, onClose }: Props) {
-  return (
-    <MyModal title="Đoạn văn ôn từ (AI)" onClose={onClose} maxWidth="620px">
-      <RequireAI>{(config) => <Writer config={config} words={words} />}</RequireAI>
-    </MyModal>
-  );
+  const config = useAIConfig();
+  if (!config) {
+    return (
+      <MyModal
+        title="Đoạn văn ôn từ (AI)"
+        onClose={onClose}
+        maxWidth="620px"
+        footer={<CloseFooter onClose={onClose} />}
+      >
+        <RequireAI>{() => null}</RequireAI>
+      </MyModal>
+    );
+  }
+  return <Writer config={config} words={words} onClose={onClose} />;
 }

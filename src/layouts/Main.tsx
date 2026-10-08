@@ -29,6 +29,7 @@ import DonateModal from "components/DonateModal";
 import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
+import CloseFooter from "components/CloseFooter";
 import StudySettingsModal from "components/StudySettingsModal";
 import GlobalSearch from "components/GlobalSearch";
 import useAutoSync from "hooks/useAutoSync";
@@ -752,6 +753,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
         <MyModal
           title="Tiện ích & Cài đặt nâng cao"
           onClose={() => setShowMobileMenuModal(false)}
+          footer={<CloseFooter onClose={() => setShowMobileMenuModal(false)} />}
         >
           <UtilitiesMenuGrid>
             <UtilityCard
@@ -861,6 +863,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
         <MyModal
           title="Bảng phím tắt học nhanh"
           onClose={() => setShowShortcutsModal(false)}
+          footer={<CloseFooter onClose={() => setShowShortcutsModal(false)} />}
         >
           <ShortcutList>
             <div className="item">
@@ -907,6 +910,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
             setShowBackupModal(false);
             setImportMessage(null);
           }}
+          footer={
+            <CloseFooter
+              onClose={() => {
+                setShowBackupModal(false);
+                setImportMessage(null);
+              }}
+            />
+          }
         >
           <BackupArea>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
@@ -995,6 +1006,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
         <MyModal
           title="Dịch vụ Text to Speech (Miễn phí 100%)"
           onClose={() => setShowVoiceModal(false)}
+          footer={<CloseFooter onClose={() => setShowVoiceModal(false)} label="Đã hiểu & Đóng" />}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div
@@ -1077,11 +1089,6 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
-              <MyButton variant="primary" onClick={() => setShowVoiceModal(false)}>
-                Đã hiểu & Đóng
-              </MyButton>
-            </div>
           </div>
         </MyModal>
       )}

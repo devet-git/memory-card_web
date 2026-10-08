@@ -10,6 +10,7 @@ import { Grade, previewInterval } from "utils/srs";
 import { buildDailyPlan, isLeech, PlanItem } from "utils/plan";
 import AIEnrichButton from "components/ai/AIEnrichButton";
 import { MyInput } from "components/MyInput";
+import SearchSelect from "components/SearchSelect";
 import { playSound } from "utils/sound";
 import { dateKey } from "utils/dates";
 import { WordItem } from "types";
@@ -89,13 +90,16 @@ const GRADES: { grade: Grade; label: string; color: string; key: string }[] = [
 export default function ReviewPage() {
   const { collections, reviewWord, updateWord, undoReviewCount, stats, settings } = useCollectionContext();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?deck=a,b limits the session to those collections
   const deckFilter = searchParams.get("deck");
+  const selectedDecks = deckFilter ? deckFilter.split(",").filter(Boolean) : [];
   const leechOnly = searchParams.get("leech") === "1";
-  const deckName = deckFilter ? collections.find((c) => c.pathname === deckFilter)?.name : undefined;
+  const deckName = selectedDecks.length > 0 ? selectedDecks.map((d) => collections.find((c) => c.pathname === d)?.name || d).join(", ") : undefined;
 
   const buildPlan = useCallback(
-    () => buildDailyPlan(collections, { deck: deckFilter, onlyLeeches: leechOnly, reverse: settings.reverseReview !== false }),
+    () => buildDailyPlan(collections, { deck: selectedDecks, onlyLeeches: leechOnly, reverse: settings.reverseReview !== false }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [collections, deckFilter, leechOnly, settings.reverseReview]
   );
 
@@ -222,6 +226,24 @@ export default function ReviewPage() {
             : `Kế hoạch hôm nay: ${plan.due} thẻ đến hạn • ${plan.leeches} thẻ ngoan cố • ${plan.fresh} thẻ mới.`}{" "}
           Hôm nay bạn đã ôn {today}/{goal} thẻ.
         </MutedText>
+        {collections.length > 1 && (
+          <div style={{ marginTop: 10, maxWidth: 520 }}>
+            <SearchSelect
+              multiple
+              value={selectedDecks}
+              onChange={(values) => {
+                const next = new URLSearchParams(searchParams);
+                if (values.length > 0) next.set("deck", values.join(","));
+                else next.delete("deck");
+                setSearchParams(next, { replace: true });
+              }}
+              options={collections.map((c) => ({ value: c.pathname, label: c.name, description: `${c.words.length} thẻ` }))}
+              placeholder="Tất cả bộ thẻ — chọn để giới hạn"
+              searchPlaceholder="Tìm bộ thẻ..."
+              ariaLabel="Chọn các bộ thẻ để ôn"
+            />
+          </div>
+        )}
         {!leechOnly && plan.leechTotal > 0 && (
           <div style={{ marginTop: 8 }}>
             <MyButton variant="ghost" size="sm" onClick={() => navigate(`/review?leech=1${deckFilter ? `&deck=${deckFilter}` : ""}`)}>

@@ -27,7 +27,7 @@ export interface DailyPlan {
 }
 
 interface PlanOptions {
-  deck?: string | null; // only this collection (pathname)
+  deck?: string | string[] | null; // only these collections (pathnames); empty = all
   now?: number;
   newLimit?: number;
   leechLimit?: number;
@@ -46,6 +46,9 @@ export function buildDailyPlan(collections: CollectionItem[], opts: PlanOptions 
   const newLimit = opts.newLimit ?? NEW_CARDS_PER_SESSION;
   const leechLimit = opts.leechLimit ?? LEECHES_PER_SESSION;
 
+  const decks = Array.isArray(opts.deck) ? opts.deck : opts.deck ? [opts.deck] : [];
+  const deckSet = decks.length > 0 ? new Set(decks) : null;
+
   type Entry = { pathname: string; word: WordItem };
   const due: Entry[] = [];
   const leechExtras: Entry[] = [];
@@ -53,7 +56,7 @@ export function buildDailyPlan(collections: CollectionItem[], opts: PlanOptions 
   const allLeeches: Entry[] = [];
 
   collections.forEach((c) => {
-    if (opts.deck && c.pathname !== opts.deck) return;
+    if (deckSet && !deckSet.has(c.pathname)) return;
     c.words.forEach((w) => {
       const entry = { pathname: c.pathname, word: w };
       const leech = isLeech(w);
