@@ -3,6 +3,7 @@ import initialCollections from "utils/mockData";
 import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from "types";
 import { removeAccent } from "utils/removeAccent";
 import { schedule, Grade } from "utils/srs";
+import { mergeCollections, mergeStats } from "utils/merge";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
@@ -49,6 +50,7 @@ interface CollectionContextType {
   // Backup & Restore
   exportToJSON: () => string;
   importFromJSON: (jsonData: string) => { success: boolean; count?: number; error?: string };
+  mergeFromJSON: (jsonData: string) => { success: boolean; error?: string };
   resetToDefaultData: () => void;
 }
 
@@ -572,6 +574,20 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  // Merge a backup into local data instead of replacing it (used by auto sync)
+  const mergeFromJSON = useCallback((jsonData: string) => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      const remoteCollections: CollectionItem[] = Array.isArray(parsed) ? parsed : parsed?.collections;
+      if (!Array.isArray(remoteCollections)) return { success: false, error: "Định dạng JSON không hợp lệ" };
+      setCollections((prev) => mergeCollections(prev, remoteCollections));
+      if (parsed?.stats) setStats((prev) => mergeStats(prev, parsed.stats));
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Lỗi đọc dữ liệu" };
+    }
+  }, []);
+
   const resetToDefaultData = useCallback(() => {
     setCollections(initialCollections);
     setStats(defaultStats);
@@ -602,6 +618,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     importSharedCollection,
     exportToJSON,
     importFromJSON,
+    mergeFromJSON,
     resetToDefaultData
   };
 

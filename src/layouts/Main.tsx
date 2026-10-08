@@ -13,7 +13,8 @@ import {
   MdCloudQueue,
   MdMoreHoriz,
   MdOutlineDashboardCustomize,
-  MdOutlineInsights
+  MdOutlineInsights,
+  MdOutlineSettings
 } from "react-icons/md";
 import { IoFolderOpenOutline, IoCafeOutline, IoHomeOutline, IoFlashOutline } from "react-icons/io5";
 import { HiFire } from "react-icons/hi";
@@ -27,6 +28,9 @@ import DonateModal from "components/DonateModal";
 import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
+import StudySettingsModal from "components/StudySettingsModal";
+import useAutoSync from "hooks/useAutoSync";
+import useReminder from "hooks/useReminder";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -469,6 +473,10 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [showGoogleDriveModal, setShowGoogleDriveModal] = useState(false);
+  const [showStudySettings, setShowStudySettings] = useState(false);
+
+  useAutoSync();
+  useReminder();
   const [showMobileMenuModal, setShowMobileMenuModal] = useState(false);
   const [showUtilitiesDropdown, setShowUtilitiesDropdown] = useState(false);
   const [testSpeechText, setTestSpeechText] = useState("Hello, welcome to MemCard!");
@@ -578,6 +586,15 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
                 {showUtilitiesDropdown && (
                   <DropdownMenu>
+                    <DropdownItem
+                      onClick={() => {
+                        setShowUtilitiesDropdown(false);
+                        setShowStudySettings(true);
+                      }}
+                    >
+                      <span className="icon"><MdOutlineSettings color="#f59e0b" /></span>
+                      <span>Cài đặt học tập</span>
+                    </DropdownItem>
                     <DropdownItem
                       onClick={() => {
                         setShowUtilitiesDropdown(false);
@@ -705,6 +722,19 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
           onClose={() => setShowMobileMenuModal(false)}
         >
           <UtilitiesMenuGrid>
+            <UtilityCard
+              onClick={() => {
+                setShowMobileMenuModal(false);
+                setShowStudySettings(true);
+              }}
+            >
+              <div className="header">
+                <MdOutlineSettings color="#f59e0b" />
+                <span>Cài đặt học tập</span>
+              </div>
+              <div className="desc">Mục tiêu, nhắc học, tự đồng bộ, cài app</div>
+            </UtilityCard>
+
             <UtilityCard as={Link} to="/apps" onClick={() => setShowMobileMenuModal(false)}>
               <div className="header">
                 <MdOutlineApps color="#0ea5e9" />
@@ -1029,6 +1059,15 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
       {/* GOOGLE DRIVE MODAL */}
       {showGoogleDriveModal && <GoogleDriveModal onClose={() => setShowGoogleDriveModal(false)} />}
+      {showStudySettings && (
+        <StudySettingsModal
+          onClose={() => setShowStudySettings(false)}
+          onOpenDrive={() => {
+            setShowStudySettings(false);
+            setShowGoogleDriveModal(true);
+          }}
+        />
+      )}
     </AppWrapper>
   );
 }

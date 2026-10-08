@@ -21,7 +21,29 @@ provider.setCustomParameters({
 });
 
 let isSigningIn = false;
-let cachedAccessToken: string | null = null;
+// The OAuth access token lives ~1h; keep it across reloads so auto-sync keeps working.
+const TOKEN_STORAGE_KEY = "memcard_gdrive_token";
+const TOKEN_TTL_MS = 55 * 60 * 1000;
+
+function loadStoredToken(): string | null {
+  try {
+    const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!raw) return null;
+    const { token, expiresAt } = JSON.parse(raw);
+    if (token && Date.now() < expiresAt) return token;
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch (e) {}
+  return null;
+}
+
+function storeToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ token, expiresAt: Date.now() + TOKEN_TTL_MS }));
+    else localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch (e) {}
+}
+
+let cachedAccessToken: string | null = loadStoredToken();
 let currentUser: User | null = null;
 
 // Track auth state
@@ -39,6 +61,7 @@ export const initAuth = (
       }
     } else {
       cachedAccessToken = null;
+      storeToken(null);
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -54,6 +77,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     }
 
     cachedAccessToken = credential.accessToken;
+    storeToken(cachedAccessToken);
     currentUser = result.user;
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
@@ -65,6 +89,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 };
 
 export const getAccessToken = async (): Promise<string | null> => {
+  if (cachedAccessToken && !loadStoredToken()) cachedAccessToken = null; // expired
   return cachedAccessToken;
 };
 
@@ -75,6 +100,7 @@ export const getCurrentUser = (): User | null => {
 export const logoutGoogle = async (): Promise<void> => {
   await signOut(auth);
   cachedAccessToken = null;
+  storeToken(null);
   currentUser = null;
 };
 
@@ -102,6 +128,14 @@ async function findBackupFile(accessToken: string): Promise<{ id: string; modifi
     return { id: data.files[0].id, modifiedTime: data.files[0].modifiedTime };
   }
   return null;
+}
+
+/** Modified time of the backup on Drive (null if none / not signed in). */
+export async function getDriveBackupModifiedTime(): Promise<string | null> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return null;
+  const file = await findBackupFile(accessToken);
+  return file ? file.modifiedTime : null;
 }
 
 // Upload/Sync data to Google Drive
