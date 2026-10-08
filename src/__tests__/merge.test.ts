@@ -44,3 +44,61 @@ describe("mergeStats", () => {
     expect(merged.lastStudyDate).toBe("2026-01-05");
   });
 });
+
+import { Tombstones, mergeTombstones, pruneTombstones, wordTombstoneKey, emptyTombstones } from "utils/merge";
+
+describe("mergeCollections with tombstones", () => {
+  const withId = (id: string, pathname: string, words: CollectionItem["words"], updatedAt = 1000): CollectionItem => ({ id, name: pathname, pathname, words, updatedAt });
+  const tomb = (over: Partial<Tombstones> = {}): Tombstones => ({ ...emptyTombstones(), ...over });
+
+  test("a card deleted on this device is not resurrected by the remote copy", () => {
+    const local = [withId("d1", "a", [{ id: "keep", source: "k", target: "k" }])];
+    const remote = [withId("d1", "a", [{ id: "keep", source: "k", target: "k" }, { id: "gone", source: "g", target: "g" }])];
+    const merged = mergeCollections(local, remote, tomb({ words: { [wordTombstoneKey("d1", "gone")]: 5000 } }));
+    expect(merged[0].words.map((w) => w.id)).toEqual(["keep"]);
+  });
+
+  test("a card touched after its deletion survives the tombstone", () => {
+    const remote = [withId("d1", "a", [{ id: "w", source: "w", target: "w", lastReviewed: 9000 }])];
+    const merged = mergeCollections([withId("d1", "a", [])], remote, tomb({ words: { [wordTombstoneKey("d1", "w")]: 5000 } }));
+    expect(merged[0].words).toHaveLength(1);
+  });
+
+  test("moving a card does not duplicate it: the old deck's remote copy is dropped, the new deck keeps it", () => {
+    const moved = { id: "m", source: "m", target: "m", addedAt: 6000 };
+    const local = [withId("d1", "a", [], 6000), withId("d2", "b", [moved], 6000)];
+    const remote = [withId("d1", "a", [{ id: "m", source: "m", target: "m" }]), withId("d2", "b", [])];
+    const merged = mergeCollections(local, remote, tomb({ words: { [wordTombstoneKey("d1", "m")]: 6000 } }));
+    expect(merged.find((c) => c.id === "d1")!.words).toHaveLength(0);
+    expect(merged.find((c) => c.id === "d2")!.words).toHaveLength(1);
+  });
+
+  test("moving a card back after deleting it from there keeps it (addedAt beats the old tombstone)", () => {
+    const back = { id: "m", source: "m", target: "m", addedAt: 9000 };
+    const merged = mergeCollections([withId("d1", "a", [back], 9000)], [], tomb({ words: { [wordTombstoneKey("d1", "m")]: 6000 } }));
+    expect(merged[0].words).toHaveLength(1);
+  });
+
+  test("a deleted deck stays deleted unless it was changed afterwards", () => {
+    const remote = [withId("old", "old", [{ id: 1, source: "a", target: "a" }], 1000), withId("edited", "edited", [], 8000)];
+    const merged = mergeCollections([], remote, tomb({ decks: { old: 5000, edited: 5000 } }));
+    expect(merged.map((c) => c.id)).toEqual(["edited"]);
+  });
+
+  test("a renamed deck merges with its remote copy instead of duplicating", () => {
+    const local = [withId("d1", "new-name", [{ id: 1, source: "a", target: "a" }], 7000)];
+    const remote = [withId("d1", "old-name", [{ id: 2, source: "b", target: "b" }], 3000)];
+    const merged = mergeCollections(local, remote);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].pathname).toBe("new-name");
+    expect(merged[0].words.map((w) => w.id).sort()).toEqual([1, 2]);
+  });
+
+  test("tombstone helpers: union keeps the latest time; old entries are pruned", () => {
+    const a = tomb({ words: { x: 100, y: 50 } });
+    expect(mergeTombstones(a, { words: { x: 80, z: 10 }, decks: { d: 1 } })).toEqual({ words: { x: 100, y: 50, z: 10 }, decks: { d: 1 } });
+    const now = 200 * 86400000;
+    const pruned = pruneTombstones(tomb({ decks: { old: 1, fresh: now - 1000 }, words: {} }), now);
+    expect(Object.keys(pruned.decks)).toEqual(["fresh"]);
+  });
+});

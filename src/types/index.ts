@@ -11,6 +11,7 @@ export interface WordItem {
   status?: MasteryStatus; // 'new' | 'learning' | 'mastered'
   reviewCount?: number;
   lastReviewed?: number; // timestamp
+  addedAt?: number; // when the card was (re)placed in its deck: created, copied or moved in (used for sync deletions)
   // Spaced repetition
   dueDate?: number; // timestamp when the card is next due
   intervalDays?: number;

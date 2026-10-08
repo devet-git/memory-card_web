@@ -1,15 +1,26 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import initialCollections from "utils/mockData";
 import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from "types";
 import { removeAccent } from "utils/removeAccent";
 import { schedule, Grade } from "utils/srs";
-import { mergeCollections, mergeStats } from "utils/merge";
+import {
+  mergeCollections,
+  mergeStats,
+  mergeTombstones,
+  pruneTombstones,
+  normalizeTombstones,
+  emptyTombstones,
+  deckKey,
+  wordTombstoneKey,
+  Tombstones
+} from "utils/merge";
 import { dateKey, daysAgoKey } from "utils/dates";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
 const STORAGE_STATS_KEY = "memcard_stats";
 const STORAGE_SETTINGS_KEY = "memcard_settings";
+const STORAGE_TOMBSTONES_KEY = "memcard_tombstones";
 
 // One-time move of data saved under the old "memocard_*" keys
 (function migrateLegacyKeys() {
@@ -135,6 +146,42 @@ function loadInitialCollections(): CollectionItem[] {
 
 export function CollectionProvider({ children }: { children: React.ReactNode }) {
   const [collections, setCollections] = useState<CollectionItem[]>(loadInitialCollections);
+  const collectionsRef = useRef(collections);
+  collectionsRef.current = collections;
+
+  // Records of deleted decks/cards, so deletions survive merging with another device's backup
+  const [tombstones, setTombstones] = useState<Tombstones>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_TOMBSTONES_KEY);
+      if (saved) return pruneTombstones(normalizeTombstones(JSON.parse(saved)));
+    } catch (e) {}
+    return emptyTombstones();
+  });
+  const tombstonesRef = useRef(tombstones);
+  tombstonesRef.current = tombstones;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_TOMBSTONES_KEY, JSON.stringify(tombstones));
+    } catch (e) {}
+  }, [tombstones]);
+
+  const recordDeletedWords = useCallback((deckPathname: string, ids: (string | number)[]) => {
+    const deck = collectionsRef.current.find((c) => c.pathname === deckPathname);
+    if (!deck || ids.length === 0) return;
+    const key = deckKey(deck);
+    const now = Date.now();
+    setTombstones((prev) => ({
+      ...prev,
+      words: { ...prev.words, ...Object.fromEntries(ids.map((id) => [wordTombstoneKey(key, id), now])) }
+    }));
+  }, []);
+
+  const recordDeletedDecks = useCallback((decks: CollectionItem[]) => {
+    if (decks.length === 0) return;
+    const now = Date.now();
+    setTombstones((prev) => ({ ...prev, decks: { ...prev.decks, ...Object.fromEntries(decks.map((d) => [deckKey(d), now])) } }));
+  }, []);
 
   // User study stats
   const [stats, setStats] = useState<UserStats>(() => {
@@ -266,6 +313,10 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       const cleanName = newName.trim();
       if (!cleanName) return false;
 
+      // A deck without a stable id is identified by its pathname, so renaming it looks like a deletion elsewhere
+      const renamed = collectionsRef.current.find((c) => c.pathname === pathname);
+      if (renamed && !renamed.id && removeAccent(cleanName) !== pathname) recordDeletedDecks([renamed]);
+
       setCollections((prev) =>
         prev.map((c) => {
           if (c.pathname !== pathname) return c;
@@ -282,12 +333,14 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       );
       return true;
     },
-    []
+    [recordDeletedDecks]
   );
 
   const deleteCollection = useCallback((pathname: string) => {
+    const deck = collectionsRef.current.find((c) => c.pathname === pathname);
+    if (deck) recordDeletedDecks([deck]);
     setCollections((prev) => prev.filter((c) => c.pathname !== pathname));
-  }, []);
+  }, [recordDeletedDecks]);
 
   // Word CRUD
   const addWord = useCallback(
@@ -337,6 +390,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   );
 
   const deleteWord = useCallback((collectionPathname: string, wordId: string | number) => {
+    recordDeletedWords(collectionPathname, [wordId]);
     setCollections((prev) =>
       prev.map((coll) => {
         if (coll.pathname !== collectionPathname) return coll;
@@ -348,7 +402,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       })
     );
     return true;
-  }, []);
+  }, [recordDeletedWords]);
 
   const toggleStar = useCallback((collectionPathname: string, wordId: string | number) => {
     setCollections((prev) =>
@@ -561,13 +615,14 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   // Backup JSON export
   const exportToJSON = useCallback((): string => {
     const backupData = {
-      version: 2,
+      version: 3,
       exportDate: new Date().toISOString(),
       collections,
-      stats
+      stats,
+      tombstones: pruneTombstones(tombstones)
     };
     return JSON.stringify(backupData, null, 2);
-  }, [collections, stats]);
+  }, [collections, stats, tombstones]);
 
   // Restore JSON import
   const importFromJSON = useCallback((jsonData: string) => {
@@ -590,6 +645,13 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
         return { success: false, error: "Tệp không chứa bộ thẻ nào" };
       }
 
+      // Replacing everything: decks that are not in the file count as deleted for other devices
+      const keptKeys = new Set(importedCollections.map(deckKey));
+      const dropped = collectionsRef.current.filter((c) => !keptKeys.has(deckKey(c)));
+      const fromFile = normalizeTombstones(Array.isArray(parsed) ? null : parsed.tombstones);
+      const next = pruneTombstones(mergeTombstones(fromFile, { decks: Object.fromEntries(dropped.map((d) => [deckKey(d), Date.now()])) }));
+      tombstonesRef.current = next;
+      setTombstones(next);
       setCollections(importedCollections);
       return { success: true, count: importedCollections.length };
     } catch (err: any) {
@@ -632,10 +694,12 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
         }
         existing.add(key);
         movedIds.add(String(w.id));
-        toAdd.push(opts.mode === "copy" ? { ...w, id: `w-copy-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}` } : w);
+        const stamp = Date.now();
+        toAdd.push(opts.mode === "copy" ? { ...w, addedAt: stamp, id: `w-copy-${stamp}-${i}-${Math.random().toString(36).substr(2, 5)}` } : { ...w, addedAt: stamp });
       });
 
       const targetPath = target.pathname;
+      if (opts.mode === "move") recordDeletedWords(opts.from, Array.from(movedIds));
       setCollections((prev) => {
         const base = created ? [created, ...prev] : prev;
         return base.map((c) => {
@@ -648,7 +712,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       });
       return { moved: toAdd.length, skipped, pathname: targetPath };
     },
-    [collections]
+    [collections, recordDeletedWords]
   );
 
   const bulkUpdateWords = useCallback((collectionPathname: string, ids: (string | number)[], patch: Partial<WordItem>) => {
@@ -663,13 +727,14 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const deleteWords = useCallback((collectionPathname: string, ids: (string | number)[]) => {
+    recordDeletedWords(collectionPathname, ids);
     const idSet = new Set(ids.map(String));
     setCollections((prev) =>
       prev.map((c) =>
         c.pathname !== collectionPathname ? c : { ...c, updatedAt: Date.now(), words: c.words.filter((w) => !idSet.has(String(w.id))) }
       )
     );
-  }, []);
+  }, [recordDeletedWords]);
 
   // Merge a backup into local data instead of replacing it (used by auto sync)
   const mergeFromJSON = useCallback((jsonData: string) => {
@@ -677,7 +742,10 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       const parsed = JSON.parse(jsonData);
       const remoteCollections: CollectionItem[] = Array.isArray(parsed) ? parsed : parsed?.collections;
       if (!Array.isArray(remoteCollections)) return { success: false, error: "Định dạng JSON không hợp lệ" };
-      setCollections((prev) => mergeCollections(prev, remoteCollections));
+      const mergedTombstones = pruneTombstones(mergeTombstones(tombstonesRef.current, normalizeTombstones(parsed?.tombstones)));
+      tombstonesRef.current = mergedTombstones;
+      setTombstones(mergedTombstones);
+      setCollections((prev) => mergeCollections(prev, remoteCollections, mergedTombstones));
       if (parsed?.stats) setStats((prev) => mergeStats(prev, parsed.stats));
       return { success: true };
     } catch (err: any) {
@@ -686,13 +754,17 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const resetToDefaultData = useCallback(() => {
-    setCollections(initialCollections);
+    // Existing decks count as deleted (so sync doesn't bring them back); the fresh defaults are stamped newer than that
+    recordDeletedDecks(collectionsRef.current);
+    const now = Date.now();
+    const fresh = initialCollections.map((c) => ({ ...c, updatedAt: now }));
+    setCollections(fresh);
     setStats(defaultStats);
     try {
-      localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(initialCollections));
+      localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(fresh));
       localStorage.setItem(STORAGE_STATS_KEY, JSON.stringify(defaultStats));
     } catch (e) {}
-  }, []);
+  }, [recordDeletedDecks]);
 
   const contextValues: CollectionContextType = {
     collections,
