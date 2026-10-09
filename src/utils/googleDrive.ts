@@ -20,10 +20,12 @@ export type DriveErrorCode =
 export class DriveError extends Error {
   code: DriveErrorCode;
   status?: number;
-  constructor(code: DriveErrorCode, message: string, status?: number) {
+  detail?: string; // technical hint for the app owner (see viewerMessage in utils/admin.ts); learners only see `message`
+  constructor(code: DriveErrorCode, message: string, status?: number, detail?: string) {
     super(message);
     this.code = code;
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -45,7 +47,12 @@ export function classifyDriveError(status: number, body: GoogleErrorBody | null)
 
   if (status === 401) return new DriveError("auth", "Phiên đăng nhập Google đã hết hạn. Hãy kết nối lại.", status);
   if (status === 403 && (has("accessNotConfigured", "SERVICE_DISABLED") || /has not been used|is disabled|accessNotConfigured/i.test(text))) {
-    return new DriveError("api_disabled", "Google Drive API chưa được bật cho dự án chứa OAuth Client ID này. Hãy bật “Google Drive API” trong Google Cloud Console (APIs & Services → Library), đợi một–hai phút rồi thử lại.", status);
+    return new DriveError(
+      "api_disabled",
+      "Đồng bộ Google Drive tạm thời chưa dùng được do cấu hình phía ứng dụng. Dữ liệu trên máy của bạn vẫn an toàn; hãy thử lại sau hoặc báo cho quản trị viên.",
+      status,
+      "Google Drive API chưa được bật cho dự án chứa OAuth Client ID này. Hãy bật “Google Drive API” trong Google Cloud Console (APIs & Services → Library), đợi một–hai phút rồi thử lại."
+    );
   }
   if (status === 403 && has("insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT")) {
     return new DriveError("permission", "Tài khoản chưa cấp quyền Google Drive. Hãy ngắt kết nối rồi đăng nhập lại và tích chọn quyền truy cập Drive.", status);
@@ -58,8 +65,8 @@ export function classifyDriveError(status: number, body: GoogleErrorBody | null)
   }
   if (status === 429) return new DriveError("quota", "Google đang giới hạn số yêu cầu. Hãy thử lại sau ít phút.", status);
   if (status === 404) return new DriveError("not_found", "Không tìm thấy tệp sao lưu trên Google Drive.", status);
-  if (status === 403) return new DriveError("permission", text || "Google từ chối quyền truy cập Drive.", status);
-  return new DriveError("other", text ? `Lỗi Google Drive (${status}): ${text}` : `Lỗi Google Drive (${status}).`, status);
+  if (status === 403) return new DriveError("permission", "Google từ chối quyền truy cập Drive. Hãy thử kết nối lại.", status, text || undefined);
+  return new DriveError("other", `Lỗi Google Drive (${status}).`, status, text || undefined);
 }
 
 async function request(url: string, token: string, init: RequestInit = {}): Promise<Response> {

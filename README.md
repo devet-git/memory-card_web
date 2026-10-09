@@ -17,3 +17,7 @@ npm run build      # build production vào thư mục build/
 Xem hướng dẫn từng bước (tạo OAuth Client ID, bật Drive API, xử lý sự cố) tại [docs/GOOGLE_DRIVE_SETUP.md](docs/GOOGLE_DRIVE_SETUP.md).
 
 Tóm tắt: tạo OAuth Client ID loại *Web application* với *Authorized JavaScript origin* là địa chỉ bạn mở app, bật Google Drive API, rồi dán Client ID vào cửa sổ Google Drive trong app hoặc đặt `GOOGLE_CLIENT_ID` trong `.env`.
+
+## Quản trị
+
+Cấu hình dùng chung (tài khoản ủng hộ, danh sách ứng dụng liên quan) chỉnh ngay trên giao diện: bấm **Alt + Shift + A** (hoặc bấm logo 7 lần trên điện thoại) rồi đăng nhập. Người học không thấy các công cụ này. Cần thiết lập Vercel Edge Config một lần, xem [docs/ADMIN.md](docs/ADMIN.md).

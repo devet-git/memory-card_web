@@ -27,7 +27,8 @@ describe("classifyDriveError", () => {
     expect(classifyDriveError(401, null)).toMatchObject({ code: "auth" });
     const disabled = classifyDriveError(403, { error: { message: "Google Drive API has not been used in project 123 before or it is disabled.", errors: [{ reason: "accessNotConfigured" }] } });
     expect(disabled.code).toBe("api_disabled");
-    expect(disabled.message).toContain("Google Drive API");
+    expect(disabled.message).toContain("quản trị viên");
+    expect(disabled.detail).toContain("Google Drive API");
     expect(classifyDriveError(403, { error: { errors: [{ reason: "insufficientPermissions" }] } }).code).toBe("permission");
     expect(classifyDriveError(403, { error: { details: [{ reason: "SERVICE_DISABLED" }] } }).code).toBe("api_disabled");
     expect(classifyDriveError(403, { error: { errors: [{ reason: "userRateLimitExceeded" }] } }).code).toBe("quota");

@@ -29,26 +29,22 @@ MemCard lưu dữ liệu trong trình duyệt. Tính năng đồng bộ Google D
 3. **Authorized JavaScript origins** — thêm đúng địa chỉ bạn mở MemCard (không có dấu `/` ở cuối, không có đường dẫn):
    - Chạy local: `http://localhost:3000`
    - Triển khai: `https://ten-mien-cua-ban.com` (hoặc `https://<user>.github.io`)
-   - Mở cửa sổ Google Drive trong MemCard → mục *Hướng dẫn cài đặt và khắc phục sự cố* sẽ hiện chính xác origin hiện tại để bạn sao chép.
+   - Bật [chế độ quản trị](ADMIN.md) (`Alt+Shift+A`), mở cửa sổ Google Drive trong MemCard: mục *Quản trị* hiện chính xác origin hiện tại để bạn sao chép.
 4. **Authorized redirect URIs**: để trống (luồng popup của Google Identity Services không cần).
 5. Bấm **Create**, sao chép **Client ID** (dạng `1234-abc.apps.googleusercontent.com`). Không cần Client secret.
 6. Chờ vài phút để cài đặt có hiệu lực.
 
 ## 4. Đưa Client ID vào MemCard
 
-Chọn **một** trong hai cách (thứ tự ưu tiên: cách A > cách B > ID mặc định có sẵn trong mã nguồn):
+Client ID chỉ đặt bằng **biến môi trường** `GOOGLE_CLIENT_ID` (không chỉnh trên giao diện). Ưu tiên: biến môi trường, rồi ID mặc định có sẵn trong mã nguồn.
 
-**A. Nhập ngay trong ứng dụng (không cần build lại)**
-Mở menu tiện ích → **Google Drive** → mục *Hướng dẫn cài đặt và khắc phục sự cố* → dán Client ID vào ô → **Lưu**. ID được lưu trong trình duyệt này.
-
-**B. Biến môi trường lúc build**
 ```bash
 cp .env.example .env
 # sửa dòng:
 GOOGLE_CLIENT_ID=1234-abc.apps.googleusercontent.com
 npm start          # hoặc npm run build
 ```
-Biến được nhúng vào bundle khi build (script `npm start` / `npm run build` tự chuyển `GOOGLE_CLIENT_ID` thành `REACT_APP_GOOGLE_CLIENT_ID` mà Create React App yêu cầu); sửa `.env` xong phải khởi động lại `npm start` / build lại.
+Biến được nhúng vào bundle khi build (script `npm start` / `npm run build` tự chuyển `GOOGLE_CLIENT_ID` thành `REACT_APP_GOOGLE_CLIENT_ID` mà Create React App yêu cầu); sửa `.env` xong phải khởi động lại `npm start` / build lại. Trên Vercel: xem mục "Triển khai lên Vercel" bên dưới.
 
 ## 5. Kết nối và sử dụng
 
@@ -85,7 +81,7 @@ Token Google chỉ sống ~1 giờ. MemCard tự gia hạn âm thầm khi trình
 2. **Project → Settings → Environment Variables**: thêm `GOOGLE_CLIENT_ID` = Client ID của bạn, tích môi trường Production (và Preview nếu cần).
 3. Biến này được nhúng lúc **build**, nên sau khi thêm hoặc sửa phải **Redeploy**.
 4. Thêm domain production (ví dụ `https://memcard.vercel.app` hoặc domain riêng) vào *Authorized JavaScript origins* của Client ID. Mỗi bản Preview có một domain khác nhau nên đăng nhập Google sẽ không chạy trên Preview, trừ khi bạn thêm từng domain đó.
-5. Kiểm tra: mở app → Google Drive → mục hướng dẫn, dòng *Client ID đang dùng* phải là ID của bạn và ghi "từ biến môi trường". Nếu ghi "mặc định" tức là biến chưa được nạp (quên Redeploy, hoặc đặt sai tên).
+5. Kiểm tra: bật chế độ quản trị (`Alt+Shift+A`), mở Google Drive → mục *Quản trị*, dòng *Client ID đang dùng* phải là ID của bạn và ghi "từ biến môi trường GOOGLE_CLIENT_ID". Nếu ghi "mặc định" tức là biến chưa được nạp (quên Redeploy, hoặc đặt sai tên).
 
 ## Dùng chung một dự án GCP cho nhiều app
 

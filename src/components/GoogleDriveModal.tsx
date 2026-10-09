@@ -13,7 +13,6 @@ import CloseFooter from "components/CloseFooter";
 import MyModal from "./MyModal";
 import MyButton from "./MyButton";
 import {
-  AuthError,
   Profile,
   signIn,
   signOut,
@@ -22,11 +21,9 @@ import {
   subscribeAuth,
   getAuthVersion,
   getClientId,
-  clientIdSource,
-  setCustomClientId,
-  looksLikeClientId
+  clientIdSource
 } from "utils/googleAuth";
-import { DriveError } from "utils/googleDrive";
+import { useAdmin, viewerMessage } from "utils/admin";
 import { overwriteRemote, fetchRemote } from "utils/driveSync";
 import { googleDeps, runSync, unblockSync, driveMeta } from "utils/driveRunner";
 import { useDriveDeps } from "hooks/useAutoSync";
@@ -246,24 +243,17 @@ const Details = styled.details`
   }
 `;
 
-const explain = (err: unknown): string => {
-  if (err instanceof AuthError) {
-    if (err.code === "denied") return `${err.message} Nếu ứng dụng Google đang ở chế độ “Testing”, hãy thêm email của bạn vào mục Test users hoặc chuyển sang “In production”.`;
-    return err.message;
-  }
-  if (err instanceof DriveError) return err.message;
-  return (err as Error)?.message || "Đã xảy ra lỗi.";
-};
+const explain = (err: unknown): string => viewerMessage(err);
 
 export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
   const { exportLatest, importFromJSON, settings, updateSettings } = useCollectionContext();
   const deps = useDriveDeps();
+  const admin = useAdmin();
   useSyncExternalStore(subscribeAuth, getAuthVersion); // re-render when the Google session changes
   const profile: Profile | null = readProfile();
   const sync = useSyncStatus();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
-  const [clientInput, setClientInput] = useState(clientIdSource() === "custom" ? getClientId() : "");
 
   const fail = (err: unknown) => setMsg({ text: explain(err), type: "error" });
 
@@ -340,16 +330,6 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
     } finally {
       setBusy(false);
     }
-  };
-
-  const saveClientId = () => {
-    const id = clientInput.trim();
-    if (id && !looksLikeClientId(id)) {
-      setMsg({ text: "Client ID không đúng định dạng. Nó có dạng 123456789-abcdef.apps.googleusercontent.com.", type: "error" });
-      return;
-    }
-    setCustomClientId(id || null);
-    setMsg({ text: id ? "Đã lưu Client ID. Hãy đăng nhập lại bằng Client ID mới." : "Đã quay về Client ID mặc định.", type: "info" });
   };
 
   const status = (() => {
@@ -482,15 +462,16 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
           </>
         )}
 
+        {admin && (
         <Details>
-          <summary>Hướng dẫn cài đặt và khắc phục sự cố</summary>
+          <summary>Quản trị: cài đặt Google Cloud và khắc phục sự cố</summary>
           <div className="block">
             <div>
               Địa chỉ ứng dụng hiện tại: <code>{window.location.origin}</code>
               <br />
-              Client ID đang dùng: <code>{getClientId()}</code> ({{ custom: "do bạn nhập", env: "từ biến môi trường", default: "mặc định" }[clientIdSource()]})
+              Client ID đang dùng: <code>{getClientId()}</code> ({{ env: "từ biến môi trường GOOGLE_CLIENT_ID", default: "mặc định trong mã nguồn" }[clientIdSource()]})
             </div>
-            <strong>Dùng Google Cloud của riêng bạn (khuyên dùng):</strong>
+            <strong>Dùng Google Cloud của riêng bạn (khuyên dùng). Client ID chỉ đặt bằng biến môi trường, không chỉnh trên giao diện:</strong>
             <Steps>
               <li>
                 Vào <code>console.cloud.google.com</code>, tạo (hoặc chọn) một dự án.
@@ -504,20 +485,8 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
               <li>
                 <em>Credentials → Create credentials → OAuth client ID</em>, loại <strong>Web application</strong>; ở <em>Authorized JavaScript origins</em> thêm đúng địa chỉ <code>{window.location.origin}</code>.
               </li>
-              <li>Sao chép Client ID, dán vào ô bên dưới rồi lưu, sau đó đăng nhập lại.</li>
+              <li>Sao chép Client ID, đặt vào biến môi trường <code>GOOGLE_CLIENT_ID</code> trên Vercel rồi Redeploy.</li>
             </Steps>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <input
-                value={clientInput}
-                onChange={(e) => setClientInput(e.target.value)}
-                placeholder="123456789-abc.apps.googleusercontent.com"
-                aria-label="Google OAuth Client ID"
-                style={{ flex: 1, minWidth: 200, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border-color, #cbd5e1)", background: "var(--bg-primary)", color: "inherit" }}
-              />
-              <MyButton variant="secondary" size="sm" onClick={saveClientId}>
-                {clientInput.trim() ? "Lưu" : "Dùng mặc định"}
-              </MyButton>
-            </div>
             <strong>Lỗi thường gặp:</strong>
             <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
               <li>
@@ -530,9 +499,10 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
               <li>Không thấy cửa sổ đăng nhập: cho phép popup cho trang này.</li>
               <li>“Chưa cấp quyền Drive”: đăng nhập lại và tích ô cho phép truy cập Drive.</li>
             </ul>
-            <span style={{ color: "var(--text-secondary)" }}>Hướng dẫn đầy đủ có trong tệp docs/GOOGLE_DRIVE_SETUP.md của dự án.</span>
+            <span style={{ color: "var(--text-secondary)" }}>Hướng dẫn đầy đủ: docs/GOOGLE_DRIVE_SETUP.md và docs/ADMIN.md.</span>
           </div>
         </Details>
+        )}
       </Container>
     </MyModal>
   );

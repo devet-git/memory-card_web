@@ -1,69 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import styled from "styled-components";
-import {
-  MdOpenInNew,
-  MdAdd,
-  MdEdit,
-  MdDelete,
-  MdOutlineApps,
-  MdRestartAlt
-} from "react-icons/md";
+import { MdOpenInNew, MdOutlineApps, MdEdit } from "react-icons/md";
 import MyButton from "components/MyButton";
-import MyModal from "components/MyModal";
-import { MyInput, MyTextarea } from "components/MyInput";
-
-interface RelatedApp {
-  id: string;
-  name: string;
-  url: string;
-  icon: string;
-  category: string;
-  description: string;
-  isCustom?: boolean;
-}
-
-const defaultApps: RelatedApp[] = [
-  {
-    id: "app-1",
-    name: "Từ Điển Anh - Việt Tra Cứu Nhanh",
-    url: "https://dict.laban.vn",
-    icon: "📖",
-    category: "Học ngoại ngữ",
-    description: "Tra cứu từ vựng tiếng Anh, phiên âm chuẩn quốc tế IPA và ví dụ câu phong phú."
-  },
-  {
-    id: "app-2",
-    name: "Luyện Phát Âm Với YouGlish",
-    url: "https://youglish.com",
-    icon: "🎬",
-    category: "Học ngoại ngữ",
-    description: "Nghe người bản xứ phát âm từ vựng trong hàng triệu video YouTube thực tế."
-  },
-  {
-    id: "app-3",
-    name: "Pomodoro Focus Timer",
-    url: "https://pomofocus.io",
-    icon: "⏱️",
-    category: "Năng suất",
-    description: "Đồng hồ đếm ngược 25 phút Pomodoro giúp tập trung tối đa khi ôn thẻ từ vựng."
-  },
-  {
-    id: "app-4",
-    name: "Google Dịch (Google Translate)",
-    url: "https://translate.google.com",
-    icon: "🌐",
-    category: "Công cụ",
-    description: "Dịch nhanh văn bản, đoạn hội thoại và phát âm chuẩn đa ngôn ngữ."
-  },
-  {
-    id: "app-5",
-    name: "Notion Ghi Chú Học Tập",
-    url: "https://notion.so",
-    icon: "📝",
-    category: "Năng suất",
-    description: "Hệ thống quản lý tài liệu, ngữ pháp và lập kế hoạch mục tiêu học tập cá nhân."
-  }
-];
+import { openAdminConsole, useAdmin } from "utils/admin";
+import { effectiveApps, useSiteConfig } from "utils/siteConfig";
 
 const Container = styled.div`
   display: flex;
@@ -279,111 +219,13 @@ const AppCard = styled.div`
 `;
 
 export default function EcosystemPage() {
-  const [apps, setApps] = useState<RelatedApp[]>(() => {
-    try {
-      const stored = localStorage.getItem("memcard_ecosystem_apps");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return defaultApps;
-  });
-
+  const admin = useAdmin();
+  // The owner's list (set in the admin console, shared by everyone), else the built-in one
+  const apps = effectiveApps(useSiteConfig());
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [editingApp, setEditingApp] = useState<RelatedApp | null>(null);
-
-  // Form fields
-  const [formName, setFormName] = useState("");
-  const [formUrl, setFormUrl] = useState("");
-  const [formIcon, setFormIcon] = useState("🔗");
-  const [formCategory, setFormCategory] = useState("Công cụ");
-  const [formDesc, setFormDesc] = useState("");
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("memcard_ecosystem_apps", JSON.stringify(apps));
-    } catch {}
-  }, [apps]);
 
   const categories = ["ALL", ...Array.from(new Set(apps.map((a) => a.category)))];
-
-  const filteredApps = apps.filter(
-    (a) => selectedCategory === "ALL" || a.category === selectedCategory
-  );
-
-  const handleOpenAddModal = () => {
-    setEditingApp(null);
-    setFormName("");
-    setFormUrl("");
-    setFormIcon("🚀");
-    setFormCategory("Học tập");
-    setFormDesc("");
-    setShowConfigModal(true);
-  };
-
-  const handleOpenEditModal = (app: RelatedApp) => {
-    setEditingApp(app);
-    setFormName(app.name);
-    setFormUrl(app.url);
-    setFormIcon(app.icon || "🔗");
-    setFormCategory(app.category || "Công cụ");
-    setFormDesc(app.description || "");
-    setShowConfigModal(true);
-  };
-
-  const handleSaveApp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim() || !formUrl.trim()) return;
-
-    let cleanUrl = formUrl.trim();
-    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-      cleanUrl = `https://${cleanUrl}`;
-    }
-
-    if (editingApp) {
-      setApps((prev) =>
-        prev.map((a) =>
-          a.id === editingApp.id
-            ? {
-                ...a,
-                name: formName.trim(),
-                url: cleanUrl,
-                icon: formIcon.trim() || "🔗",
-                category: formCategory.trim() || "Tiện ích",
-                description: formDesc.trim()
-              }
-            : a
-        )
-      );
-    } else {
-      const newApp: RelatedApp = {
-        id: `custom-app-${Date.now()}`,
-        name: formName.trim(),
-        url: cleanUrl,
-        icon: formIcon.trim() || "🔗",
-        category: formCategory.trim() || "Tiện ích",
-        description: formDesc.trim(),
-        isCustom: true
-      };
-      setApps((prev) => [newApp, ...prev]);
-    }
-
-    setShowConfigModal(false);
-  };
-
-  const handleDeleteApp = (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa liên kết ứng dụng này?")) {
-      setApps((prev) => prev.filter((a) => a.id !== id));
-    }
-  };
-
-  const handleResetDefaults = () => {
-    if (window.confirm("Đặt lại toàn bộ danh sách liên kết ứng dụng về mặc định ban đầu?")) {
-      setApps(defaultApps);
-    }
-  };
+  const filteredApps = apps.filter((a) => selectedCategory === "ALL" || a.category === selectedCategory);
 
   return (
     <Container>
@@ -394,38 +236,21 @@ export default function EcosystemPage() {
           </div>
           <div>
             <h1>Hệ Sinh Thái & Ứng Dụng Liên Quan</h1>
-            <p>Khám phá và gắn thêm các công cụ, từ điển và website học tập bổ trợ hữu ích cho bạn.</p>
+            <p>Các công cụ, từ điển và website học tập bổ trợ hữu ích.</p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "8px" }}>
-          <MyButton
-            variant="primary"
-            icon={<MdAdd />}
-            onClick={handleOpenAddModal}
-          >
-            Thêm ứng dụng mới
+        {admin && (
+          <MyButton variant="secondary" icon={<MdEdit />} onClick={() => openAdminConsole("apps")}>
+            Chỉnh sửa danh sách
           </MyButton>
-
-          <MyButton
-            variant="secondary"
-            icon={<MdRestartAlt />}
-            onClick={handleResetDefaults}
-            title="Khôi phục danh sách ứng dụng mẫu"
-          >
-            Mặc định
-          </MyButton>
-        </div>
+        )}
       </HeaderBanner>
 
       {/* FILTER TABS */}
       <FilterTabRow>
         {categories.map((cat) => (
-          <FilterTab
-            key={cat}
-            $active={selectedCategory === cat}
-            onClick={() => setSelectedCategory(cat)}
-          >
+          <FilterTab key={cat} $active={selectedCategory === cat} onClick={() => setSelectedCategory(cat)}>
             {cat === "ALL" ? `Tất cả (${apps.length})` : cat}
           </FilterTab>
         ))}
@@ -447,118 +272,15 @@ export default function EcosystemPage() {
             </div>
 
             <div className="card-footer">
-              <a
-                href={app.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: "inline-flex" }}
-              >
-                <MyButton
-                  variant="primary"
-                  size="sm"
-                  icon={<MdOpenInNew />}
-                >
+              <a href={app.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex" }}>
+                <MyButton variant="primary" size="sm" icon={<MdOpenInNew />}>
                   Truy cập
                 </MyButton>
               </a>
-
-              <div style={{ display: "flex", gap: "4px" }}>
-                <MyButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<MdEdit />}
-                  onClick={() => handleOpenEditModal(app)}
-                  title="Chỉnh sửa cấu hình"
-                />
-                <MyButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<MdDelete />}
-                  onClick={() => handleDeleteApp(app.id)}
-                  title="Xóa ứng dụng"
-                />
-              </div>
             </div>
           </AppCard>
         ))}
       </AppGrid>
-
-      {/* ADD / EDIT MODAL */}
-      {showConfigModal && (
-        <MyModal
-          footer={
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>              <MyButton variant="ghost" onClick={() => setShowConfigModal(false)}>
-                Hủy
-              </MyButton>
-              <MyButton variant="primary" type="submit" form="save-app-form" disabled={!formName.trim() || !formUrl.trim()}>
-                {editingApp ? "Cập nhật cấu hình" : "Lưu ứng dụng"}
-              </MyButton></div>
-          }
-          title={editingApp ? "Chỉnh sửa liên kết ứng dụng" : "Thêm ứng dụng liên quan mới"}
-          onClose={() => setShowConfigModal(false)}
-        >
-          <form id="save-app-form" onSubmit={handleSaveApp} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
-                Tên ứng dụng / Trang web *
-              </label>
-              <MyInput
-                placeholder="VD: Từ điển Cambridge, ChatGPT, Laban..."
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
-                Đường dẫn liên kết (URL) *
-              </label>
-              <MyInput
-                placeholder="VD: https://dictionary.cambridge.org"
-                value={formUrl}
-                onChange={(e) => setFormUrl(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "10px" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
-                  Icon / Emoji
-                </label>
-                <MyInput
-                  placeholder="🚀, 📚..."
-                  value={formIcon}
-                  onChange={(e) => setFormIcon(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
-                  Thể loại
-                </label>
-                <MyInput
-                  placeholder="Học tập, Công cụ, AI..."
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", fontWeight: 700 }}>
-                Mô tả ngắn
-              </label>
-              <MyTextarea
-                placeholder="Giới thiệu nhanh công dụng của web/app này đối với người học..."
-                value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
-              />
-            </div>
-
-          </form>
-        </MyModal>
-      )}
     </Container>
   );
 }

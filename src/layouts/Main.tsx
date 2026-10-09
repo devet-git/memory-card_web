@@ -16,6 +16,7 @@ import {
   MdOutlineInsights,
   MdSportsEsports,
   MdCloudOff,
+  MdAdminPanelSettings,
   MdOutlineMenuBook,
   MdOutlineSettings,
   MdSearch
@@ -34,6 +35,10 @@ import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
 import { levelInfo, xpOf } from "utils/xp";
 import { useSyncStatus } from "utils/syncStatus";
+import AdminUnlockModal from "components/AdminUnlockModal";
+import AdminConsoleModal, { AdminTab } from "components/AdminConsoleModal";
+import { isAdmin, OPEN_ADMIN_EVENT, useAdmin } from "utils/admin";
+import { donateEnabled, loadSiteConfig, useSiteConfig } from "utils/siteConfig";
 import CloseFooter from "components/CloseFooter";
 import StudySettingsModal from "components/StudySettingsModal";
 import GlobalSearch from "components/GlobalSearch";
@@ -493,6 +498,48 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   const { speak, isLoading: isSpeakLoading } = useSpeak();
   const dueCount = collections.reduce((acc, c) => acc + c.words.filter((w) => isDue(w)).length, 0);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const admin = useAdmin();
+  const siteConfig = useSiteConfig();
+  const showDonate = donateEnabled(siteConfig);
+  const [showAdminUnlock, setShowAdminUnlock] = useState(false);
+  const [adminConsole, setAdminConsole] = useState<{ tab: AdminTab } | null>(null);
+  const pendingTab = useRef<AdminTab>("donate");
+  const logoTaps = useRef<number[]>([]);
+
+  // Owner entrance: Alt+Shift+A, or tap the logo 7 times within 4 seconds (phones). Asks for the password unless already signed in.
+  const openAdmin = (tab: AdminTab = "donate") => {
+    if (isAdmin()) setAdminConsole({ tab });
+    else {
+      pendingTab.current = tab;
+      setShowAdminUnlock(true);
+    }
+  };
+  const handleLogoTap = () => {
+    const now = Date.now();
+    logoTaps.current = [...logoTaps.current.filter((t) => now - t < 4000), now];
+    if (logoTaps.current.length >= 7) {
+      logoTaps.current = [];
+      openAdmin();
+    }
+  };
+  const openAdminRef = useRef(openAdmin);
+  openAdminRef.current = openAdmin;
+  useEffect(() => {
+    loadSiteConfig();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyA") {
+        e.preventDefault();
+        openAdminRef.current();
+      }
+    };
+    const onOpen = (e: Event) => openAdminRef.current((e as CustomEvent).detail?.tab || "donate");
+    window.addEventListener("keydown", onKey);
+    window.addEventListener(OPEN_ADMIN_EVENT, onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_ADMIN_EVENT, onOpen);
+    };
+  }, []);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showDonateModal, setShowDonateModal] = useState(false);
@@ -565,7 +612,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
       <Header $sticky={location.pathname === "/"}>
         <NavContainer>
           <BrandArea>
-            <LogoLink to="/" title="MemCard - Về trang chủ">
+            <LogoLink to="/" title="MemCard - Về trang chủ" onClick={handleLogoTap}>
               <MemCardLogo size={32} />
             </LogoLink>
 
@@ -611,6 +658,10 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               onClick={() => setShowSearch(true)}
               title="Tìm thẻ (Ctrl+K)"
             />
+
+            {admin && (
+              <MyButton variant="ghost" size="sm" icon={<MdAdminPanelSettings color="#7c3aed" />} onClick={() => openAdmin()} title="Quản trị (Alt+Shift+A)" aria-label="Mở màn hình quản trị" />
+            )}
 
             {(driveSync.state === "needs-auth" || driveSync.state === "error") && (
               <MyButton
@@ -673,6 +724,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                       <span>Google Drive</span>
                     </DropdownItem>
 
+                    {showDonate && (
                     <DropdownItem
                       onClick={() => {
                         setShowUtilitiesDropdown(false);
@@ -682,6 +734,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                       <span className="icon"><IoCafeOutline color="#ea580c" /></span>
                       <span>Mời cà phê ☕</span>
                     </DropdownItem>
+                    )}
 
                     <DropdownItem
                       onClick={() => {
@@ -841,6 +894,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               <div className="desc">Đồng bộ đám mây dữ liệu thẻ cá nhân</div>
             </UtilityCard>
 
+            {showDonate && (
             <UtilityCard
               onClick={() => {
                 setShowMobileMenuModal(false);
@@ -853,6 +907,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               </div>
               <div className="desc">Ủng hộ tác giả duy trì dự án miễn phí</div>
             </UtilityCard>
+            )}
 
             <UtilityCard
               onClick={() => {
@@ -1148,6 +1203,16 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
       {showDonateModal && <DonateModal onClose={() => setShowDonateModal(false)} />}
 
       {/* GOOGLE DRIVE MODAL */}
+      {showAdminUnlock && (
+        <AdminUnlockModal
+          onClose={() => setShowAdminUnlock(false)}
+          onUnlocked={() => {
+            setShowAdminUnlock(false);
+            setAdminConsole({ tab: pendingTab.current });
+          }}
+        />
+      )}
+      {adminConsole && admin && <AdminConsoleModal initialTab={adminConsole.tab} onClose={() => setAdminConsole(null)} />}
       {showGoogleDriveModal && <GoogleDriveModal onClose={() => setShowGoogleDriveModal(false)} />}
       {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} />}
       {showStudySettings && (

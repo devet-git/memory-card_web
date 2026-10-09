@@ -2,6 +2,7 @@ import { DriveError, downloadBackup, listBackups, uploadBackup } from "utils/goo
 import { AuthError, getAccessToken, invalidateToken, readProfile, refreshSilently } from "utils/googleAuth";
 import { SyncDeps, SyncError, SyncMeta, SyncResult, syncOnce } from "utils/driveSync";
 import { setSyncStatus } from "utils/syncStatus";
+import { viewerMessage } from "utils/admin";
 
 // Runs one sync at a time and reports what happened to the status store.
 
@@ -66,11 +67,11 @@ function report(err: unknown) {
     setSyncStatus({ state: "needs-auth", message: NEEDS_SIGN_IN });
   } else if (err instanceof AuthError) {
     blocked = err.code === "interaction_required" || err.code === "denied" || err.code === "scope_missing";
-    setSyncStatus({ state: blocked ? "needs-auth" : "error", message: err.message });
+    setSyncStatus({ state: blocked ? "needs-auth" : "error", message: viewerMessage(err) });
   } else if (err instanceof DriveError || err instanceof SyncError) {
-    setSyncStatus({ state: "error", message: err.message });
+    setSyncStatus({ state: "error", message: viewerMessage(err) });
   } else {
-    setSyncStatus({ state: "error", message: (err as Error)?.message || "Đồng bộ thất bại." });
+    setSyncStatus({ state: "error", message: viewerMessage(err, "Đồng bộ thất bại.") });
   }
 }
 

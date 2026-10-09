@@ -4,10 +4,9 @@
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 export const SCOPES = `openid email profile ${DRIVE_SCOPE}`;
 
-// Used when neither a custom id (set in the app) nor GOOGLE_CLIENT_ID is provided.
+// Used when GOOGLE_CLIENT_ID is not provided.
 const DEFAULT_CLIENT_ID = "41227230020-a5aidkq57u0lq2bqt7q6d64e0kmb25gk.apps.googleusercontent.com";
 
-const CLIENT_ID_KEY = "memcard_gdrive_client_id";
 const TOKEN_KEY = "memcard_gdrive_token";
 const PROFILE_KEY = "memcard_gdrive_profile";
 const GIS_URL = "https://accounts.google.com/gsi/client";
@@ -27,9 +26,11 @@ export type AuthErrorCode =
 
 export class AuthError extends Error {
   code: AuthErrorCode;
-  constructor(code: AuthErrorCode, message: string) {
+  detail?: string; // technical hint for the app owner (see viewerMessage in utils/admin.ts)
+  constructor(code: AuthErrorCode, message: string, detail?: string) {
     super(message);
     this.code = code;
+    this.detail = detail;
   }
 }
 
@@ -46,36 +47,15 @@ export interface StoredToken {
 
 // ---------- configuration ----------
 
-export type ClientIdSource = "custom" | "env" | "default";
-
-export const looksLikeClientId = (s: string) => /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/i.test(s.trim());
-
-function readCustomClientId(): string {
-  try {
-    return localStorage.getItem(CLIENT_ID_KEY)?.trim() || "";
-  } catch {
-    return "";
-  }
-}
+export type ClientIdSource = "env" | "default";
 
 export function clientIdSource(): ClientIdSource {
-  if (readCustomClientId()) return "custom";
-  if ((process.env.REACT_APP_GOOGLE_CLIENT_ID || "").trim()) return "env";
-  return "default";
+  return (process.env.REACT_APP_GOOGLE_CLIENT_ID || "").trim() ? "env" : "default";
 }
 
-/** Custom id (entered in the app) > GOOGLE_CLIENT_ID (build time, mapped by scripts/cra.mjs) > the built-in default. */
+/** GOOGLE_CLIENT_ID (set at build time, mapped by scripts/cra.mjs), else the built-in default. It cannot be changed from the UI. */
 export function getClientId(): string {
-  return readCustomClientId() || (process.env.REACT_APP_GOOGLE_CLIENT_ID || "").trim() || DEFAULT_CLIENT_ID;
-}
-
-/** Saves (or clears, with null/empty) a client id and forgets the current Google session, which belongs to the old one. */
-export function setCustomClientId(id: string | null): void {
-  try {
-    if (id && id.trim()) localStorage.setItem(CLIENT_ID_KEY, id.trim());
-    else localStorage.removeItem(CLIENT_ID_KEY);
-  } catch {}
-  forgetSession();
+  return (process.env.REACT_APP_GOOGLE_CLIENT_ID || "").trim() || DEFAULT_CLIENT_ID;
 }
 
 // ---------- stored session ----------
@@ -224,7 +204,13 @@ export async function requestToken({ prompt, hint }: RequestOptions): Promise<St
             if (r.error || !r.access_token) {
               const code: AuthErrorCode =
                 r.error === "access_denied" ? "denied" : ["interaction_required", "login_required", "consent_required"].includes(r.error || "") ? "interaction_required" : "unknown";
-              return reject(new AuthError(code, r.error_description || r.error || "Google từ chối cấp quyền."));
+              return reject(
+                new AuthError(
+                  code,
+                  code === "denied" ? "Google đã từ chối đăng nhập. Hãy thử lại hoặc chọn tài khoản khác." : "Google từ chối cấp quyền.",
+                  [r.error, r.error_description, code === "denied" ? "Nếu ứng dụng Google đang ở chế độ “Testing”, hãy thêm email này vào Test users hoặc chuyển sang “In production”." : ""].filter(Boolean).join(": ")
+                )
+              );
             }
             if (!api.hasGrantedAllScopes(r, DRIVE_SCOPE)) {
               return reject(new AuthError("scope_missing", "Bạn chưa cấp quyền truy cập Google Drive. Khi đăng nhập hãy tích chọn ô cho phép xem và quản lý tệp do MemCard tạo."));
@@ -236,12 +222,12 @@ export async function requestToken({ prompt, hint }: RequestOptions): Promise<St
           done(() => {
             if (e?.type === "popup_failed_to_open") return reject(new AuthError("popup_blocked", "Trình duyệt đã chặn cửa sổ đăng nhập. Hãy cho phép cửa sổ bật lên (popup) cho trang này rồi thử lại."));
             if (e?.type === "popup_closed") return reject(new AuthError(prompt === "none" ? "interaction_required" : "popup_closed", "Cửa sổ đăng nhập đã bị đóng."));
-            reject(new AuthError("unknown", e?.message || "Đăng nhập Google thất bại."));
+            reject(new AuthError("unknown", "Đăng nhập Google thất bại. Hãy thử lại.", e?.message));
           })
       });
       client.requestAccessToken({ prompt, ...(hint ? { hint } : {}) });
     } catch (err: any) {
-      done(() => reject(new AuthError("unknown", err?.message || "Đăng nhập Google thất bại.")));
+      done(() => reject(new AuthError("unknown", "Đăng nhập Google thất bại. Hãy thử lại.", err?.message)));
     }
   });
 }
