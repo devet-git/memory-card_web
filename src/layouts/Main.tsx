@@ -45,6 +45,7 @@ import GlobalSearch from "components/GlobalSearch";
 import useAutoSync from "hooks/useAutoSync";
 import useReminder from "hooks/useReminder";
 
+import { confirmDialog } from "utils/dialogs";
 interface MainLayoutProps {
   children: React.ReactNode;
 }
@@ -1092,8 +1093,8 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                   variant="danger"
                   size="sm"
                   icon={<MdOutlineRestartAlt />}
-                  onClick={() => {
-                    if (window.confirm("Bạn có chắc chắn muốn đặt lại toàn bộ dữ liệu về mặc định?")) {
+                  onClick={async () => {
+                    if (await confirmDialog({ title: "Khôi phục dữ liệu mẫu", message: "Bạn có chắc chắn muốn đặt lại toàn bộ dữ liệu về mặc định?", confirmLabel: "Đặt lại", danger: true })) {
                       resetToDefaultData();
                       setImportMessage("Đã khôi phục dữ liệu mẫu ban đầu thành công!");
                     }

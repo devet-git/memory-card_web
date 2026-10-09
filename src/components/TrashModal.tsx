@@ -6,6 +6,7 @@ import useCollectionContext from "contexts/Collection";
 import { TRASH_DAYS, daysLeft } from "utils/trash";
 import { firstMeaning } from "utils/games";
 
+import { confirmDialog } from "utils/dialogs";
 /** Recently deleted cards and decks, with a way to bring them back. */
 export default function TrashModal({ onClose }: { onClose: () => void }) {
   const { trash, restoreFromTrash, removeFromTrash, emptyTrash } = useCollectionContext();
@@ -73,8 +74,8 @@ export default function TrashModal({ onClose }: { onClose: () => void }) {
               <MyButton
                 variant="danger"
                 size="sm"
-                onClick={() => {
-                  if (window.confirm(`Xóa vĩnh viễn ${trash.length} mục trong thùng rác? Không thể hoàn tác.`)) emptyTrash();
+                onClick={async () => {
+                  if (await confirmDialog({ title: "Dọn sạch thùng rác", message: `Xóa vĩnh viễn ${trash.length} mục trong thùng rác? Không thể hoàn tác.`, confirmLabel: "Xóa vĩnh viễn", danger: true })) emptyTrash();
                 }}
               >
                 Dọn sạch thùng rác

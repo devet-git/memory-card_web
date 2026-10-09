@@ -61,6 +61,7 @@ import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
+import { confirmDialog, showToast } from "utils/dialogs";
 type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "speaking" | "sentence" | "roleplay" | "match" | "grid" | "table";
 
 const Container = styled.div`
@@ -1166,7 +1167,7 @@ export default function WordPage() {
     e.preventDefault();
     if (!bulkText.trim() || !collectionName) return;
     const count = bulkImportWords(collectionName, bulkText);
-    alert(`Đã thêm thành công ${count} từ vựng!`);
+    showToast(`Đã thêm thành công ${count} từ vựng!`, "success");
     setBulkText("");
     setShowBulkModal(false);
   };
@@ -1245,9 +1246,9 @@ export default function WordPage() {
     setTimeout(() => setSelectionNote(null), 3500);
   };
 
-  const handleRemoveDuplicates = () => {
+  const handleRemoveDuplicates = async () => {
     if (!collectionName || duplicateIds.length === 0) return;
-    if (!window.confirm(`Xóa ${duplicateIds.length} thẻ trùng? Thẻ được ôn nhiều nhất của mỗi từ sẽ được giữ lại.`)) return;
+    if (!(await confirmDialog({ title: "Xóa thẻ trùng", message: `Xóa ${duplicateIds.length} thẻ trùng? Thẻ được ôn nhiều nhất của mỗi từ sẽ được giữ lại.`, confirmLabel: "Xóa", danger: true }))) return;
     duplicateIds.forEach((id) => deleteWord(collectionName, id));
   };
 
@@ -1499,7 +1500,7 @@ export default function WordPage() {
           setTypingResult("idle");
           setShowTypingHint(false);
         } else {
-          alert("Tuyệt vời! Bạn đã hoàn thành toàn bộ bài gõ từ!");
+          showToast("Tuyệt vời! Bạn đã hoàn thành toàn bộ bài gõ từ!", "success");
           setTypingIndex(0);
           setTypingInput("");
           setTypingResult("idle");
@@ -2351,8 +2352,8 @@ export default function WordPage() {
                   <MyButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      if (!window.confirm(`Đặt lại tiến độ học của ${selectedList.length} thẻ về "Chưa ôn"?`)) return;
+                    onClick={async () => {
+                      if (!(await confirmDialog({ title: "Đặt lại tiến độ", message: `Đặt lại tiến độ học của ${selectedList.length} thẻ về "Chưa ôn"?`, confirmLabel: "Đặt lại" }))) return;
                       bulkUpdateWords(selectedCollection.pathname, selectedList, {
                         status: "new",
                         reviewCount: 0,
@@ -2373,8 +2374,8 @@ export default function WordPage() {
                   <MyButton
                     variant="danger"
                     size="sm"
-                    onClick={() => {
-                      if (!window.confirm(`Xóa ${selectedList.length} thẻ đã chọn? Không thể hoàn tác.`)) return;
+                    onClick={async () => {
+                      if (!(await confirmDialog({ title: "Xóa thẻ đã chọn", message: `Xóa ${selectedList.length} thẻ đã chọn? Không thể hoàn tác.`, confirmLabel: "Xóa", danger: true }))) return;
                       deleteWords(selectedCollection.pathname, selectedList);
                       setSelectedIds(new Set());
                     }}
@@ -2463,8 +2464,8 @@ export default function WordPage() {
                               variant="ghost"
                               size="sm"
                               icon={<AiOutlineDelete />}
-                              onClick={() => {
-                                if (window.confirm(`Bạn muốn xóa thẻ "${word.source}"?`)) {
+                              onClick={async () => {
+                                if (await confirmDialog({ title: "Xóa thẻ", message: `Bạn muốn xóa thẻ "${word.source}"?`, confirmLabel: "Xóa", danger: true })) {
                                   deleteWord(selectedCollection.pathname, word.id);
                                 }
                               }}
@@ -2531,8 +2532,8 @@ export default function WordPage() {
                         variant="ghost"
                         size="sm"
                         icon={<AiOutlineDelete />}
-                        onClick={() => {
-                          if (window.confirm(`Bạn muốn xóa thẻ "${word.source}"?`)) {
+                        onClick={async () => {
+                          if (await confirmDialog({ title: "Xóa thẻ", message: `Bạn muốn xóa thẻ "${word.source}"?`, confirmLabel: "Xóa", danger: true })) {
                             deleteWord(selectedCollection.pathname, word.id);
                           }
                         }}

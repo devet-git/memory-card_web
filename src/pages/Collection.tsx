@@ -12,6 +12,7 @@ import SearchSelect from "components/SearchSelect";
 import { categoryOptions } from "utils/categories";
 import { downloadTextFile, backupFileName } from "utils/download";
 
+import { showToast } from "utils/dialogs";
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -242,9 +243,9 @@ export default function CollectionPage() {
       if (content) {
         const res = importFromJSON(content);
         if (res.success) {
-          alert(`Đã nhập thành công ${res.count} bộ sưu tập!`);
+          showToast(`Đã nhập thành công ${res.count} bộ sưu tập!`, "success");
         } else {
-          alert(`Lỗi: ${res.error}`);
+          showToast(`Lỗi: ${res.error}`, "error");
         }
       }
     };

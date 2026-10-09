@@ -120,6 +120,32 @@ describe("saving", () => {
     expect(JSON.stringify(get.body)).not.toContain(ENV.ADMIN_PASSWORD);
   });
 
+  test("works with a store that rejects upsert (404 Edge Config Item not found)", async () => {
+    let value: any;
+    const ops: string[] = [];
+    const fetchImpl = jest.fn(async (url: string, init?: any) => {
+      if (url.startsWith("https://edge-config.vercel.com/")) return value === undefined ? { ok: false, status: 404, json: async () => ({}) } : { ok: true, status: 200, json: async () => value };
+      const item = JSON.parse(init.body).items[0];
+      ops.push(item.operation);
+      if (item.operation === "upsert") return { ok: false, status: 404, json: async () => ({ error: { message: "Edge Config Item not found." } }) };
+      if (item.operation === "update" && value === undefined) return { ok: false, status: 404, json: async () => ({ error: { message: "Edge Config Item not found." } }) };
+      if (item.operation === "create" && value !== undefined) return { ok: false, status: 409, json: async () => ({ error: { message: "exists" } }) };
+      value = item.value;
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+    const handler = createHandler({ env: ENV, fetchImpl, now: () => 1_000_000, sleep: async () => {} });
+    const call = async (method: string, body: any, token?: string) => {
+      const out: any = {};
+      await handler({ method, headers: token ? { authorization: `Bearer ${token}` } : {}, body }, { setHeader() {}, status: (c: number) => ({ json: (b: any) => Object.assign(out, { status: c, body: b }) }) });
+      return out;
+    };
+    const token = signToken(ENV.ADMIN_PASSWORD, 2_000_000);
+    expect((await call("PUT", { config: goodConfig }, token)).status).toBe(200); // first save creates the item
+    expect((await call("PUT", { config: { ...goodConfig, apps: [] } }, token)).status).toBe(200); // later saves update it
+    expect(ops).toEqual(["create", "update"]);
+    expect(value.donate.bankId).toBe("VCB");
+  });
+
   test("a team-owned store is addressed with teamId", async () => {
     const s = setup({ ...ENV, VERCEL_TEAM_ID: "team_123" });
     await s.call("PUT", { body: { config: goodConfig }, token: await s.login() });

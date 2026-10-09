@@ -29,6 +29,12 @@ React 18 + TypeScript (Create React App) flashcard app, deployed on Vercel. User
 - For browser checks with Playwright, use `/opt/pw-browsers/chromium` and avoid port 5060 (Chromium blocks it with `ERR_UNSAFE_PORT`). A plain static server has no SPA fallback, so navigate via links, not `goto('/route')`.
 - Keep these docs in sync when behaviour changes: `docs/ADMIN.md`, `docs/GOOGLE_DRIVE_SETUP.md`, `README.md`, `.env.example`.
 
+## Design rules
+- **Never use the browser's `alert()`, `confirm()` or `prompt()`** (including `window.`). Use the in-app components instead: `await confirmDialog({ title, message, confirmLabel, danger })` for yes/no questions (set `danger: true` for destructive actions) and `showToast(text, "success" | "error" | "info")` for short notices, both from `utils/dialogs.ts` (drawn by `<DialogHost />` in `App.tsx`). For anything with fields or several actions, build a `MyModal`. A test in `src/__tests__/dialogs.test.ts` fails if a browser dialog is added.
+- Reuse the existing components (`MyModal`, `MyButton`, `MyInput`, `SearchSelect`, `ConfirmDialog`) and the CSS variables (`var(--bg-secondary)`, `var(--text-primary)`, ...) so light and dark themes both work. Use `SearchSelect` for long pick-lists instead of free-text codes.
+- Tabs, filters and other navigation inside a modal go in `MyModal`'s `toolbar` prop so they stay pinned while the content scrolls.
+- Layouts must work on phones (below 640px); keep touch targets comfortable.
+
 ## Code style
 - Match the surrounding code: Vietnamese UI text, English identifiers and comments, styled-components, path aliases from `src/` (`utils/...`, `components/...`).
 - Add or update tests in `src/__tests__` for new logic (the Vercel function is tested there too).

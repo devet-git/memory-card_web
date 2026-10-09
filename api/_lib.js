@@ -130,24 +130,40 @@ function createHandler({ env, fetchImpl, now = () => Date.now(), sleep = (ms) =>
     return { storage: "edge-config", config: await res.json() };
   }
 
-  async function writeStored(config) {
-    const ec = edgeConfigParts(env);
-    if (!ec || !env.VERCEL_API_TOKEN) return { missing: !ec ? "EDGE_CONFIG (hoặc GLOBAL_CONFIG)" : "VERCEL_API_TOKEN" };
+  async function patchItem(ec, operation, config) {
     const team = env.VERCEL_TEAM_ID ? `?teamId=${encodeURIComponent(env.VERCEL_TEAM_ID)}` : "";
     const res = await fetchImpl(`https://api.vercel.com/v1/edge-config/${ec.id}/items${team}`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${env.VERCEL_API_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ items: [{ operation: "upsert", key: ITEM_KEY, value: config }] })
+      body: JSON.stringify({ items: [{ operation, key: ITEM_KEY, value: config }] })
     });
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const j = await res.json();
-        detail = (j && j.error && (j.error.message || j.error.code)) || "";
-      } catch {}
-      return { error: `Vercel từ chối ghi cấu hình (${res.status}${detail ? `: ${detail}` : ""}).` };
+    if (res.ok) return { ok: true };
+    let detail = "";
+    try {
+      const j = await res.json();
+      detail = (j && j.error && (j.error.message || j.error.code)) || "";
+    } catch {}
+    return { ok: false, status: res.status, detail };
+  }
+
+  // "upsert" is not accepted by every store ("Edge Config Item not found"), so pick create/update from what exists
+  // and fall back to the other one if Vercel disagrees.
+  async function writeStored(config) {
+    const ec = edgeConfigParts(env);
+    if (!ec || !env.VERCEL_API_TOKEN) return { missing: !ec ? "EDGE_CONFIG (hoặc GLOBAL_CONFIG)" : "VERCEL_API_TOKEN" };
+    let exists = false;
+    try {
+      exists = (await readStored()).config !== null;
+    } catch {}
+    const order = exists ? ["update", "create"] : ["create", "update"];
+    let last;
+    for (const operation of order) {
+      last = await patchItem(ec, operation, config);
+      if (last.ok) return {};
+      // only a "this operation does not fit the item's state" answer is worth trying the other operation for
+      if (![400, 404, 409, 422].includes(last.status)) break;
     }
-    return {};
+    return { error: `Vercel từ chối ghi cấu hình (${last.status}${last.detail ? `: ${last.detail}` : ""}).` };
   }
 
   return async function handler(req, res) {

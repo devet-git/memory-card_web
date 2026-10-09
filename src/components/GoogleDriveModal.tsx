@@ -30,6 +30,7 @@ import { useDriveDeps } from "hooks/useAutoSync";
 import { useSyncStatus, formatSyncTime } from "utils/syncStatus";
 import useCollectionContext from "contexts/Collection";
 
+import { confirmDialog } from "utils/dialogs";
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -300,7 +301,7 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
   };
 
   const handleOverwriteDrive = async () => {
-    if (!window.confirm("Ghi đè bản sao lưu trên Google Drive bằng dữ liệu của máy này? Thay đổi chỉ có trên Drive (từ thiết bị khác) sẽ bị mất.")) return;
+    if (!(await confirmDialog({ title: "Ghi đè Google Drive", message: "Ghi đè bản sao lưu trên Google Drive bằng dữ liệu của máy này? Thay đổi chỉ có trên Drive (từ thiết bị khác) sẽ bị mất.", confirmLabel: "Ghi đè", danger: true }))) return;
     setBusy(true);
     setMsg(null);
     try {
@@ -315,7 +316,7 @@ export default function GoogleDriveModal({ onClose }: GoogleDriveModalProps) {
   };
 
   const handleReplaceLocal = async () => {
-    if (!window.confirm("Thay thế TOÀN BỘ dữ liệu trên máy này bằng bản trên Google Drive? Thay đổi chỉ có trên máy này sẽ bị mất.")) return;
+    if (!(await confirmDialog({ title: "Thay thế dữ liệu máy này", message: "Thay thế TOÀN BỘ dữ liệu trên máy này bằng bản trên Google Drive? Thay đổi chỉ có trên máy này sẽ bị mất.", confirmLabel: "Thay thế", danger: true }))) return;
     setBusy(true);
     setMsg(null);
     try {

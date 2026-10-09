@@ -116,6 +116,18 @@ const ModalBody = styled.div`
   }
 `;
 
+// Stays pinned between the header and the scrolling body (tabs, filters)
+const ModalToolbar = styled.div`
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  background-color: var(--bg-secondary, #ffffff);
+
+  @media (max-width: 640px) {
+    padding: 8px 14px;
+  }
+`;
+
 // Stays pinned under the scrolling body (actions, status messages)
 const ModalFooter = styled.footer`
   flex-shrink: 0;
@@ -141,6 +153,7 @@ interface MyModalProps {
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  toolbar?: React.ReactNode; // pinned under the title; does not scroll with the content
   onClose: () => void;
   maxWidth?: string;
   guard?: ModalGuard;
@@ -159,6 +172,7 @@ export default function MyModal({
   title,
   children,
   footer,
+  toolbar,
   onClose,
   maxWidth,
   guard,
@@ -202,6 +216,7 @@ export default function MyModal({
               <IoClose size={22} />
             </CloseButton>
           </ModalHeader>
+          {toolbar && <ModalToolbar>{toolbar}</ModalToolbar>}
           <ModalBody>
           <ModalAIScope.Provider value={scope}>{children}</ModalAIScope.Provider>
         </ModalBody>

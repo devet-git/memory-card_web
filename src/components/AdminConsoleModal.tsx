@@ -10,12 +10,12 @@ import { DonateConfig, SiteConfigError, effectiveApps, effectiveDonate, saveSite
 import { RelatedApp, defaultApps } from "data/relatedApps";
 import { BANKS, findBank } from "data/vietnamBanks";
 
+import { confirmDialog } from "utils/dialogs";
 export type AdminTab = "donate" | "apps" | "system";
 
 const Tabs = styled.div`
   display: flex;
   gap: 6px;
-  margin-bottom: 14px;
   flex-wrap: wrap;
 `;
 
@@ -105,6 +105,19 @@ export default function AdminConsoleModal({ initialTab = "donate", onClose }: Pr
       title="Quản trị MemCard"
       onClose={onClose}
       maxWidth="640px"
+      toolbar={
+        <Tabs role="tablist">
+          {([
+            ["donate", "Ủng hộ"],
+            ["apps", "Ứng dụng liên quan"],
+            ["system", "Hệ thống"]
+          ] as [AdminTab, string][]).map(([id, label]) => (
+            <TabButton key={id} role="tab" aria-selected={tab === id} $active={tab === id} onClick={() => setTab(id)}>
+              {label}
+            </TabButton>
+          ))}
+        </Tabs>
+      }
       footer={
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, width: "100%", flexWrap: "wrap" }}>
           <span role="status" style={{ fontSize: 13, alignSelf: "center", color: msg ? (msg.ok ? "#059669" : "#dc2626") : "var(--text-secondary)" }}>
@@ -123,17 +136,6 @@ export default function AdminConsoleModal({ initialTab = "donate", onClose }: Pr
         </div>
       }
     >
-      <Tabs role="tablist">
-        {([
-          ["donate", "Ủng hộ"],
-          ["apps", "Ứng dụng liên quan"],
-          ["system", "Hệ thống"]
-        ] as [AdminTab, string][]).map(([id, label]) => (
-          <TabButton key={id} role="tab" aria-selected={tab === id} $active={tab === id} onClick={() => setTab(id)}>
-            {label}
-          </TabButton>
-        ))}
-      </Tabs>
 
       {storage !== "edge-config" && tab !== "system" && (
         <Note style={{ color: "#b45309", marginBottom: 10 }}>
@@ -208,7 +210,9 @@ export default function AdminConsoleModal({ initialTab = "donate", onClose }: Pr
             <MyButton variant="secondary" size="sm" icon={<MdAdd />} disabled={apps.length >= 30} onClick={() => setApps((prev) => [...prev, { id: `app-${Date.now()}`, name: "", url: "https://", icon: "🔗", category: "Công cụ", description: "" }])}>
               Thêm ứng dụng
             </MyButton>
-            <MyButton variant="ghost" size="sm" onClick={() => window.confirm("Đặt lại danh sách về mặc định (chưa lưu cho tới khi bấm “Lưu cho mọi người”)?") && setApps(defaultApps.map((a) => ({ ...a })))}>
+            <MyButton variant="ghost" size="sm" onClick={async () => {
+                if (await confirmDialog({ title: "Đặt lại danh sách", message: "Đặt lại danh sách về mặc định? Chưa lưu cho tới khi bạn bấm “Lưu cho mọi người”.", confirmLabel: "Đặt lại" })) setApps(defaultApps.map((a) => ({ ...a })));
+              }}>
               Đặt lại mặc định
             </MyButton>
           </div>
