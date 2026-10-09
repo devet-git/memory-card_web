@@ -40,6 +40,14 @@ Các biến môi trường:
 
 Chỉ `GOOGLE_CLIENT_ID` được đưa vào mã trình duyệt (và nó vốn công khai). Ba biến còn lại chỉ máy chủ đọc được.
 
+## Lỗi thường gặp khi lưu
+
+| Thông báo | Cách xử lý |
+|---|---|
+| `403: You don't have permission to create the edge config item` | `VERCEL_API_TOKEN` không có quyền ghi vào store. Tạo lại token tại <https://vercel.com/account/tokens> với **Scope** là đúng team/tài khoản chứa project; nếu project thuộc team thì đặt thêm `VERCEL_TEAM_ID` (dạng `team_...`); tài khoản tạo token phải là Owner hoặc Member (không phải Viewer). Sau khi đổi biến, Redeploy |
+| `404: Edge Config Item not found` | Bản cũ dùng thao tác `upsert`; bản hiện tại tự chọn create/update. Cập nhật lên bản mới nhất |
+| Thiếu biến môi trường | Thông báo nêu rõ tên biến còn thiếu; thêm rồi Redeploy |
+
 ## Giới hạn và lưu ý
 
 - **Edge Config bản miễn phí giới hạn 8KB** cho cả kho; mã giới hạn cấu hình khoảng 7KB. Mô tả ứng dụng nên ngắn.

@@ -163,7 +163,11 @@ function createHandler({ env, fetchImpl, now = () => Date.now(), sleep = (ms) =>
       // only a "this operation does not fit the item's state" answer is worth trying the other operation for
       if (![400, 404, 409, 422].includes(last.status)) break;
     }
-    return { error: `Vercel từ chối ghi cấu hình (${last.status}${last.detail ? `: ${last.detail}` : ""}).` };
+    const hint =
+      last.status === 401 || last.status === 403
+        ? " Token VERCEL_API_TOKEN không có quyền ghi vào store này: hãy tạo token ở đúng tài khoản/team chứa project (ô Scope khi tạo token), đặt VERCEL_TEAM_ID nếu project thuộc team, và dùng tài khoản có vai trò Owner/Member (không phải Viewer). Xem docs/ADMIN.md."
+        : "";
+    return { error: `Vercel từ chối ghi cấu hình (${last.status}${last.detail ? `: ${last.detail}` : ""}).${hint}` };
   }
 
   return async function handler(req, res) {

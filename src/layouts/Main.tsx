@@ -56,6 +56,7 @@ const AppWrapper = styled.div`
   flex-direction: column;
   background-color: var(--bg-primary, #f8fafc);
   color: var(--text-primary, #0f172a);
+  overflow-x: clip; /* safety net: nothing may make the page scroll sideways (clip keeps sticky headers working) */
 `;
 
 // Pages with their own sticky bar (collections, words, apps) scroll the header away
@@ -112,6 +113,7 @@ const LogoLink = styled(Link)`
   font-size: 20px;
   letter-spacing: -0.02em;
   color: var(--text-primary, #0f172a);
+  flex-shrink: 0;
 `;
 
 const NavLinks = styled.nav`
@@ -172,6 +174,15 @@ const MobileOnlyControls = styled.div`
   }
 `;
 
+// The theme switch is also in the mobile menu, so it makes room on narrow phones
+const MobileThemeToggle = styled.span`
+  display: inline-flex;
+
+  @media (max-width: 420px) {
+    display: none;
+  }
+`;
+
 const StreakBadge = styled.div`
   display: inline-flex;
   align-items: center;
@@ -188,6 +199,13 @@ const StreakBadge = styled.div`
     padding: 5px 8px;
     font-size: 12px;
     gap: 3px;
+  }
+
+  /* "7 ngày" becomes "7" next to the flame on narrow phones */
+  .unit {
+    @media (max-width: 400px) {
+      display: none;
+    }
   }
 
   svg {
@@ -677,7 +695,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
             <StreakBadge title={`Chuỗi ngày ôn tập liên tục của bạn • ${stats.freezes ?? 0} băng streak 🧊`}>
               <HiFire />
-              <span>{stats.studyStreakDays} ngày</span>
+              <span>{stats.studyStreakDays}<span className="unit"> ngày</span></span>
             </StreakBadge>
             <LevelChip as={Link} to="/stats" title={`${levelInfo(xpOf(stats)).title} • ${xpOf(stats)} XP`} style={{ textDecoration: "none" }}>
               <span>Lv {levelInfo(xpOf(stats)).level}</span>
@@ -775,13 +793,15 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
 
             {/* MOBILE ONLY CONTROLS */}
             <MobileOnlyControls>
-              <MyButton
-                variant="ghost"
-                size="sm"
-                icon={settings.theme === "dark" ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
-                onClick={toggleTheme}
-                title={settings.theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
-              />
+              <MobileThemeToggle>
+                <MyButton
+                  variant="ghost"
+                  size="sm"
+                  icon={settings.theme === "dark" ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
+                  onClick={toggleTheme}
+                  title={settings.theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
+                />
+              </MobileThemeToggle>
 
               <MyButton
                 variant="secondary"

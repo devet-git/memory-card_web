@@ -185,6 +185,7 @@ describe("saving", () => {
     expect(token).toBeTruthy();
     expect(out.status).toBe(502);
     expect(out.body.message).toContain("403");
+    expect(out.body.message).toContain("VERCEL_TEAM_ID"); // tells the owner what to check
   });
 
   test("other methods are refused", async () => {

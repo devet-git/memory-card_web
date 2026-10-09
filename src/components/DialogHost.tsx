@@ -10,7 +10,7 @@ const ToastStack = styled.div`
   left: 50%;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  z-index: 10001; // above modals (their backdrop is 9999)
+  z-index: 10001; /* above modals (their backdrop is 9999) */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -18,7 +18,7 @@ const ToastStack = styled.div`
   pointer-events: none;
 
   @media (max-width: 640px) {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px)); // above the bottom navigation
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)); /* above the bottom navigation */
   }
 `;
 
