@@ -5,7 +5,7 @@ import { addDays } from "utils/streak";
 
 // ---------- shared: profile, coins, records ----------
 
-export const emptyProfile = (): GameProfile => ({ coins: 0, played: 0, best: {}, daily: {} });
+export const emptyProfile = (): GameProfile => ({ coins: 0, spent: 0, owned: [], equipped: {}, played: 0, best: {}, daily: {} });
 export const profileOf = (stats: UserStats): GameProfile => ({ ...emptyProfile(), ...(stats.games || {}) });
 
 export interface GameResult {
@@ -27,6 +27,7 @@ export function applyGameResult(stats: UserStats, result: GameResult): UserStats
   return {
     ...stats,
     games: {
+      ...g,
       coins: g.coins + Math.max(0, Math.round(result.coins)),
       played: g.played + 1,
       best: { ...g.best, [result.game]: Math.max(g.best[result.game] || 0, result.score) },
@@ -56,7 +57,16 @@ export function mergeGameProfiles(a: GameProfile | undefined, b: GameProfile | u
   const y = { ...emptyProfile(), ...b };
   const best: Record<string, number> = { ...x.best };
   Object.entries(y.best).forEach(([k, v]) => (best[k] = Math.max(best[k] || 0, v)));
-  return { coins: Math.max(x.coins, y.coins), played: Math.max(x.played, y.played), best, daily: { ...y.daily, ...x.daily } };
+  // Earned and spent coins only ever grow, so taking the larger of each keeps the balance consistent across devices
+  return {
+    coins: Math.max(x.coins, y.coins),
+    spent: Math.max(x.spent || 0, y.spent || 0),
+    owned: Array.from(new Set([...(x.owned || []), ...(y.owned || [])])),
+    equipped: { ...y.equipped, ...x.equipped }, // this device's choice wins
+    played: Math.max(x.played, y.played),
+    best,
+    daily: { ...y.daily, ...x.daily }
+  };
 }
 
 /** First meaning of a dictionary-style definition, without the part-of-speech tag: "(n.) a; b" -> "a". */

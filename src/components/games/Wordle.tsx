@@ -24,12 +24,14 @@ import {
   dailyStreak,
   shuffle
 } from "utils/games";
+import { equippedData } from "utils/shop";
 import { GameBox, GameHeader, GameResultCard } from "./GameKit";
 
+// The colours can be swapped by the high-contrast palette from the shop (CSS variables set on the game box)
 const COLORS: Record<LetterState | "empty", string> = {
-  correct: "#10b981",
-  present: "#f59e0b",
-  absent: "#64748b",
+  correct: "var(--wl-correct, #10b981)",
+  present: "var(--wl-present, #f59e0b)",
+  absent: "var(--wl-absent, #64748b)",
   empty: "transparent"
 };
 
@@ -249,6 +251,10 @@ export default function Wordle({ mode, words, onAnswer, onExit }: Props) {
 
   const title = daily ? "Đoán chữ hằng ngày" : "Đoán chữ";
   const streak = dailyStreak(profileOf(stats).daily, today);
+  const palette = equippedData(profileOf(stats), "palette");
+  const paletteStyle = palette
+    ? ({ "--wl-correct": palette.correct, "--wl-present": palette.present, "--wl-absent": palette.absent } as React.CSSProperties)
+    : undefined;
 
   if (loadError) {
     return (
@@ -273,7 +279,7 @@ export default function Wordle({ mode, words, onAnswer, onExit }: Props) {
   if (done && !summary) {
     const text = shareText(today, done.won, done.guesses, done.grid);
     return (
-      <GameBox>
+      <GameBox style={paletteStyle}>
         <GameHeader title={title} onExit={onExit} />
         <GameResultCard
           emoji={done.won ? "🎉" : "😅"}
@@ -310,7 +316,7 @@ export default function Wordle({ mode, words, onAnswer, onExit }: Props) {
   });
 
   return (
-    <GameBox>
+    <GameBox style={paletteStyle}>
       <GameHeader title={title} onExit={onExit} meta={<span>{rows.length}/{WORDLE_ATTEMPTS} lượt</span>} />
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Nghĩa tiếng Việt ({len} chữ cái)</div>

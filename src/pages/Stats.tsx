@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import useCollectionContext from "contexts/Collection";
@@ -11,6 +11,8 @@ import MyButton from "components/MyButton";
 import { buildForecast } from "utils/forecast";
 import { weekProgress, MAX_FREEZES } from "utils/streak";
 import { bestHour, hourSlots, hourToTime, MIN_REVIEWS_FOR_ADVICE } from "utils/studyHours";
+import { levelInfo, xpOf } from "utils/xp";
+import { Period, PERIOD_DAYS, PERIOD_LABEL, buildReport, changePct, reportText } from "utils/report";
 
 const Cols = styled.div`
   display: grid;
@@ -153,6 +155,12 @@ export default function StatsPage() {
   const reviewsLogged = slots.reduce((a, s) => a + s.total, 0);
   const golden = useMemo(() => bestHour(stats), [stats]);
 
+  const level = useMemo(() => levelInfo(xpOf(stats)), [stats]);
+  const [period, setPeriod] = useState<Period>("week");
+  const [copied, setCopied] = useState(false);
+  const report = useMemo(() => buildReport(stats, collections, period, goal), [stats, collections, period, goal]);
+  const change = changePct(report);
+
   const pct = (n: number) => (counts.total ? Math.round((n / counts.total) * 100) : 0);
 
   return (
@@ -177,6 +185,77 @@ export default function StatsPage() {
             <span className="label">Đã thuộc ({counts.mastered}/{counts.total})</span>
           </div>
         </Cols>
+      </Panel>
+
+
+      <Panel>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+          <h3 style={{ margin: 0 }}>
+            Cấp {level.level} • {level.title}
+          </h3>
+          <MutedText>{level.xp.toLocaleString("vi-VN")} XP</MutedText>
+        </div>
+        <div style={{ height: 12, borderRadius: 9999, background: "var(--bg-tertiary)", overflow: "hidden", margin: "10px 0 6px" }} role="progressbar" aria-valuenow={level.pct} aria-valuemin={0} aria-valuemax={100} aria-label="Tiến độ lên cấp">
+          <div style={{ width: `${level.pct}%`, height: "100%", background: "var(--accent-gradient, linear-gradient(135deg,#3b82f6,#8b5cf6))" }} />
+        </div>
+        <MutedText>
+          Còn {(level.needed - level.into).toLocaleString("vi-VN")} XP để lên cấp {level.level + 1}. XP đến từ mỗi lượt ôn (2 XP), mỗi ngày học (10 XP) và xu kiếm được từ trò chơi.
+        </MutedText>
+      </Panel>
+
+      <Panel>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          <h3 style={{ margin: 0 }}>Tổng kết {PERIOD_LABEL[period]}</h3>
+          <div style={{ display: "flex", gap: 6 }}>
+            {(["week", "month"] as Period[]).map((p) => (
+              <MyButton key={p} size="sm" variant={period === p ? "primary" : "secondary"} onClick={() => { setPeriod(p); setCopied(false); }}>
+                {p === "week" ? "Tuần" : "Tháng"}
+              </MyButton>
+            ))}
+          </div>
+        </div>
+        <Cols>
+          <div className="box">
+            <span className="value">{report.reviews}</span>
+            <span className="label">Lượt ôn{change === null ? "" : ` (${change >= 0 ? "+" : ""}${change}%)`}</span>
+          </div>
+          <div className="box">
+            <span className="value">
+              {report.daysStudied}/{PERIOD_DAYS[period]}
+            </span>
+            <span className="label">Ngày có học</span>
+          </div>
+          <div className="box">
+            <span className="value">{report.goalDays}</span>
+            <span className="label">Ngày đạt mục tiêu</span>
+          </div>
+          <div className="box">
+            <span className="value">{report.cardsTouched}</span>
+            <span className="label">Thẻ đã ôn ({report.masteredTouched} đã thuộc)</span>
+          </div>
+        </Cols>
+        <MutedText style={{ marginTop: 10 }}>
+          {report.bestDay ? `Ngày chăm nhất: ${Number(report.bestDay.day.slice(8))}/${Number(report.bestDay.day.slice(5, 7))} với ${report.bestDay.count} lượt. ` : "Chưa có lượt ôn nào trong kỳ này. "}
+          {report.averagePerStudyDay > 0 ? `Trung bình ${report.averagePerStudyDay} lượt mỗi ngày học. ` : ""}
+          {report.busiestHour !== null ? `Bạn hay học nhất lúc ${report.busiestHour}h. ` : ""}
+          {report.hardWords.length > 0 ? `Từ khó nhất: ${report.hardWords.map((w) => `${w.source} (sai ${w.wrong} lần)`).join(", ")}.` : ""}
+        </MutedText>
+        <div style={{ marginTop: 10 }}>
+          <MyButton
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(reportText(report));
+                setCopied(true);
+              } catch {
+                setCopied(false);
+              }
+            }}
+          >
+            {copied ? "Đã sao chép!" : "Sao chép bản tổng kết"}
+          </MyButton>
+        </div>
       </Panel>
 
       <Panel>

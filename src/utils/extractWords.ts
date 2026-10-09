@@ -8,7 +8,7 @@ export interface Candidate {
   sentence: string; // first sentence containing the word, as written
 }
 
-export const MAX_TEXT_LENGTH = 20000;
+export const MAX_TEXT_LENGTH = 150000; // a whole film's subtitles
 const MIN_LENGTH = 3;
 const MAX_SENTENCE = 220;
 
@@ -63,13 +63,11 @@ export function extractCandidates(text: string, baseOf: (w: string) => string, h
   const sentences = splitSentences(body);
   const byBase = new Map<string, Candidate>();
 
+  // Tokens come in text order, so one moving pointer finds each token's sentence (no rescanning from the start)
+  let si = 0;
   const sentenceAt = (index: number) => {
-    let found = sentences[0];
-    for (const s of sentences) {
-      if (s.start > index) break;
-      found = s;
-    }
-    return found?.text || "";
+    while (si + 1 < sentences.length && sentences[si + 1].start <= index) si++;
+    return sentences[si]?.text || "";
   };
 
   for (const { token, index } of tokenize(body)) {
@@ -84,4 +82,33 @@ export function extractCandidates(text: string, baseOf: (w: string) => string, h
     if (!c.forms.includes(token)) c.forms.push(token);
   }
   return Array.from(byBase.values()).sort((a, b) => b.count - a.count || a.word.localeCompare(b.word));
+}
+
+/**
+ * Plain text from a subtitle file (.srt / .vtt / .ass-like text): drops cue numbers, timestamps, headers,
+ * markup and sound cues, and joins cue lines into running text so sentences stay whole.
+ */
+export function subtitleToText(raw: string): string {
+  const lines = raw
+    .replace(/\r/g, "")
+    .replace(/^\uFEFF/, "")
+    .split("\n");
+  const out: string[] = [];
+  let last = "";
+  for (const line of lines) {
+    let t = line.trim();
+    if (!t || /^WEBVTT/i.test(t) || /^(NOTE|STYLE|REGION)\b/.test(t) || /^\d+$/.test(t) || /-->/.test(t)) continue;
+    t = t
+      .replace(/<[^>]*>/g, "") // <i>, <font ...>, <00:00:01.000>
+      .replace(/\{\\[^}]*\}/g, "") // {\an8}
+      .replace(/\[[^\]]*\]|\([^)]*\)/g, "") // [music] (laughs)
+      .replace(/[♪♫]+/g, "")
+      .replace(/^[-–—]\s*/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!t || t === last) continue; // empty after cleanup, or the same line repeated by the next cue
+    last = t;
+    out.push(t);
+  }
+  return out.join(" ");
 }

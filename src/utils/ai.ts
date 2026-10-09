@@ -58,11 +58,29 @@ export const AI_CHANGE_EVENT = CHANGE_EVENT;
 
 export class AIError extends Error {}
 
+/** A picture sent along with the prompt (vision): base64 data without the "data:" prefix. */
+export interface AIImage {
+  mediaType: string;
+  data: string;
+}
+
 interface AskOptions {
   system?: string;
   maxTokens?: number;
   signal?: AbortSignal;
+  images?: AIImage[];
 }
+
+// How each provider wants pictures attached to the user message
+export const anthropicContent = (prompt: string, images: AIImage[] = []) =>
+  images.length
+    ? [...images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mediaType, data: i.data } })), { type: "text", text: prompt }]
+    : prompt;
+
+export const openaiContent = (prompt: string, images: AIImage[] = []) =>
+  images.length ? [{ type: "text", text: prompt }, ...images.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mediaType};base64,${i.data}` } }))] : prompt;
+
+export const geminiParts = (prompt: string, images: AIImage[] = []) => [...images.map((i) => ({ inline_data: { mime_type: i.mediaType, data: i.data } })), { text: prompt }];
 
 async function readError(res: Response): Promise<string> {
   try {
@@ -100,7 +118,7 @@ export async function askAI(prompt: string, config: AIConfig, opts: AskOptions =
           model: config.model,
           max_tokens: maxTokens,
           ...(opts.system ? { system: opts.system } : {}),
-          messages: [{ role: "user", content: prompt }]
+          messages: [{ role: "user", content: anthropicContent(prompt, opts.images) }]
         })
       });
     } else if (config.provider === "openai") {
@@ -111,7 +129,7 @@ export async function askAI(prompt: string, config: AIConfig, opts: AskOptions =
         body: JSON.stringify({
           model: config.model,
           max_tokens: maxTokens,
-          messages: [...(opts.system ? [{ role: "system", content: opts.system }] : []), { role: "user", content: prompt }]
+          messages: [...(opts.system ? [{ role: "system", content: opts.system }] : []), { role: "user", content: openaiContent(prompt, opts.images) }]
         })
       });
     } else {
@@ -123,7 +141,7 @@ export async function askAI(prompt: string, config: AIConfig, opts: AskOptions =
           headers: { "content-type": "application/json", "x-goog-api-key": config.apiKey },
           body: JSON.stringify({
             ...(opts.system ? { systemInstruction: { parts: [{ text: opts.system }] } } : {}),
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            contents: [{ role: "user", parts: geminiParts(prompt, opts.images) }],
             generationConfig: { maxOutputTokens: maxTokens }
           })
         }

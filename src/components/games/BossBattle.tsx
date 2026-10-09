@@ -21,6 +21,7 @@ import {
   bossEmoji
 } from "utils/boss";
 import { GameBox, GameHeader, GameResultCard } from "./GameKit";
+import QuestionPanel, { Reveal } from "./QuestionPanel";
 
 const Arena = styled.div`
   display: flex;
@@ -87,59 +88,6 @@ const Arena = styled.div`
   }
 `;
 
-const Card = styled.div`
-  text-align: center;
-  padding: 18px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color, #e2e8f0);
-
-  .label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #7c3aed;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .prompt {
-    margin: 4px 0;
-    font-size: 13px;
-    color: var(--text-secondary, #64748b);
-  }
-  .q {
-    font-size: clamp(24px, 6vw, 32px);
-    font-weight: 800;
-  }
-`;
-
-const Options = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Option = styled.button<{ $state: "idle" | "right" | "wrong" | "dim" }>`
-  padding: 12px 10px;
-  border-radius: 12px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  color: inherit;
-  text-align: center;
-  border: 2px solid ${(p) => (p.$state === "right" ? "#10b981" : p.$state === "wrong" ? "#ef4444" : "var(--border-color, #cbd5e1)")};
-  background: ${(p) => (p.$state === "right" ? "rgba(16,185,129,0.15)" : p.$state === "wrong" ? "rgba(239,68,68,0.15)" : "transparent")};
-  opacity: ${(p) => (p.$state === "dim" ? 0.5 : 1)};
-
-  kbd {
-    opacity: 0.55;
-    margin-right: 6px;
-    font-size: 12px;
-  }
-`;
-
 interface Props {
   words: WordItem[];
   onAnswer: (wordId: string | number, correct: boolean) => void;
@@ -147,11 +95,6 @@ interface Props {
 }
 
 type Stage = "minion" | "boss";
-interface Reveal {
-  correct: boolean;
-  picked: string;
-}
-
 /** Defeat a few minions, then the boss: a card you keep forgetting. Win and the card counts as remembered. */
 export default function BossBattle({ words, onAnswer, onExit }: Props) {
   const { stats, recordGame } = useCollectionContext();
@@ -166,7 +109,6 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
   const [damage, setDamage] = useState(0);
   const [question, setQuestion] = useState<BattleQuestion | null>(null);
   const [reveal, setReveal] = useState<Reveal | null>(null);
-  const [typed, setTyped] = useState("");
   const [summary, setSummary] = useState<{ score: number; coins: number; newBest: boolean; won: boolean } | null>(null);
   const poolRef = useRef(words);
   const missed = useRef(new Set<string>());
@@ -185,7 +127,6 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
     setHearts(HEARTS);
     setDamage(0);
     setReveal(null);
-    setTyped("");
     setSummary(null);
     missed.current = new Set();
     reported.current = false;
@@ -220,7 +161,6 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
   const next = () => {
     if (!boss) return;
     setReveal(null);
-    setTyped("");
     if (hearts <= 0 || (stage === "boss" && damage >= BOSS_HP)) return setPhase("over");
     const pool = poolRef.current;
     if (stage === "minion" && results.length < minions.length) return setQuestion(minionQuestion(minions[results.length], pool));
@@ -230,31 +170,6 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
     }
     setQuestion(bossQuestion(damage, boss, pool));
   };
-
-  // Keyboard: 1-4 pick an option
-  useEffect(() => {
-    if (phase !== "fight" || !question || question.kind !== "choice" || reveal) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const i = Number(e.key) - 1;
-      if (i >= 0 && i < question.options.length) submit(question.options[i]);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Enter moves on after an answer was shown
-  useEffect(() => {
-    if (phase !== "fight" || !reveal) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !(e.target as HTMLElement | null)?.closest?.("button")) {
-        e.preventDefault();
-        next();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   const outcome = useMemo(
     () => ({ won: hearts > 0 && damage >= BOSS_HP, heartsLeft: hearts, minionsDefeated: results.filter(Boolean).length, bossDamage: damage }),
@@ -347,13 +262,6 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
 
   if (!boss || !question) return null;
 
-  const options = question.kind === "choice" ? question.options : [];
-  const stateOf = (o: string): "idle" | "right" | "wrong" | "dim" => {
-    if (!reveal || question.kind !== "choice") return "idle";
-    if (o === question.answer) return "right";
-    if (o === reveal.picked) return "wrong";
-    return "dim";
-  };
   const finishing = reveal && (hearts <= 0 || (stage === "boss" && damage >= BOSS_HP));
 
   return (
@@ -386,61 +294,14 @@ export default function BossBattle({ words, onAnswer, onExit }: Props) {
           </div>
         </div>
 
-        <Card>
-          <div className="label">{question.label}</div>
-          <div className="prompt">{question.prompt}</div>
-          <div className="q">{question.question}</div>
-        </Card>
-
-        {question.kind === "choice" ? (
-          <Options>
-            {options.map((o, i) => (
-              <Option key={o} $state={stateOf(o)} disabled={Boolean(reveal)} onClick={() => submit(o)}>
-                <kbd>{i + 1}</kbd>
-                {o}
-              </Option>
-            ))}
-          </Options>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (typed.trim()) submit(typed);
-            }}
-            style={{ display: "flex", gap: 8, flexDirection: "column" }}
-          >
-            <input
-              autoFocus
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              disabled={Boolean(reveal)}
-              placeholder={question.hint}
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-label="Gõ đáp án"
-              style={{ padding: "12px 14px", fontSize: 18, borderRadius: 10, border: "2px solid var(--border-color, #cbd5e1)", background: "var(--bg-primary)", color: "inherit", textAlign: "center" }}
-            />
-            {!reveal && (
-              <MyButton variant="primary" type="submit" disabled={!typed.trim()}>
-                Tấn công
-              </MyButton>
-            )}
-          </form>
-        )}
-
-        {reveal && (
-          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }} aria-live="polite">
-            <b style={{ color: reveal.correct ? "#059669" : "#dc2626" }}>
-              {reveal.correct ? (stage === "boss" ? "💥 Trúng đòn!" : "✓ Chính xác!") : `✗ Sai rồi. Đáp án: ${question.answer}`}
-            </b>
-            <div>
-              <MyButton variant="primary" onClick={next}>
-                {finishing ? "Xem kết quả" : "Tiếp tục"}
-              </MyButton>
-            </div>
-          </div>
-        )}
+        <QuestionPanel
+          question={question}
+          reveal={reveal}
+          onSubmit={submit}
+          onNext={next}
+          nextLabel={finishing ? "Xem kết quả" : "Tiếp tục"}
+          successText={stage === "boss" ? "💥 Trúng đòn!" : "✓ Chính xác!"}
+        />
       </Arena>
     </GameBox>
   );

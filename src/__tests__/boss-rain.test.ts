@@ -151,3 +151,59 @@ describe("word rain", () => {
     expect(rainWords(list).map((w) => w.id)).toEqual(["3"]);
   });
 });
+
+import { hardness, floorKind, sortByHardness, pickFloorWord, floorQuestion, floorPoints, towerCoins } from "utils/tower";
+
+describe("tower climb", () => {
+  const cards = [
+    word("easy", "cat", "mèo"),
+    word("mid", "table", "cái bàn", { wrongCount: 1 }),
+    word("hard", "ephemeral", "phù du", { wrongCount: 6, lapses: 4, difficulty: 9 }),
+    word("m2", "house", "ngôi nhà", { difficulty: 4 }),
+    word("m3", "water", "nước"),
+    word("m4", "green", "màu xanh lá", { wrongCount: 2 }),
+    word("m5", "dog", "chó", { difficulty: 3 })
+  ];
+
+  test("hardness grows with misses, lapses and FSRS difficulty", () => {
+    expect(hardness(cards[2])).toBeGreaterThan(hardness(cards[1]));
+    expect(hardness(cards[1])).toBeGreaterThan(hardness(cards[0]));
+  });
+
+  test("question types rotate by floor", () => {
+    expect([1, 2, 3, 4, 5, 6, 9, 10].map(floorKind)).toEqual(["meaning", "meaning", "term", "meaning", "typing", "term", "term", "typing"]);
+  });
+
+  test("cards are sorted easiest first", () => {
+    const sorted = sortByHardness(cards, seq([0.5]));
+    expect(sorted[sorted.length - 1].id).toBe("hard");
+    expect(sorted.map(hardness)).toEqual([...sorted.map(hardness)].sort((a, b) => a - b));
+  });
+
+  test("higher floors draw harder cards on average, without repeating a card", () => {
+    const sorted = sortByHardness(cards, seq([0.5]));
+    const avg = (floor: number) => {
+      const picks = Array.from({ length: 40 }, () => hardness(pickFloorWord(sorted, floor, new Set(), seq([0.3, 0.7, 0.1, 0.9]))));
+      return picks.reduce((a, b) => a + b, 0) / picks.length;
+    };
+    expect(avg(28)).toBeGreaterThan(avg(1));
+
+    const used = new Set<string>();
+    const seen = Array.from({ length: cards.length }, (_, i) => pickFloorWord(sorted, i + 1, used).id);
+    expect(new Set(seen).size).toBe(cards.length);
+    // once every card was used the climb continues instead of getting stuck
+    expect(() => pickFloorWord(sorted, 8, used)).not.toThrow();
+    expect(used.size).toBe(1);
+  });
+
+  test("floor questions carry the floor label and the matching style", () => {
+    expect(floorQuestion(1, cards[0], cards)).toMatchObject({ kind: "choice", label: "Tầng 1", question: "cat" });
+    expect(floorQuestion(3, cards[0], cards)).toMatchObject({ kind: "choice", label: "Tầng 3", answer: "cat" });
+    expect(floorQuestion(5, cards[0], cards)).toMatchObject({ kind: "type", label: "Tầng 5", answer: "cat" });
+  });
+
+  test("points and coins scale with height", () => {
+    expect(floorPoints(10)).toBeGreaterThan(floorPoints(1));
+    expect(towerCoins(95)).toBe(4);
+  });
+});

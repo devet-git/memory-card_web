@@ -8,13 +8,18 @@ import TrueFalse from "components/games/TrueFalse";
 import MemoryFlip from "components/games/MemoryFlip";
 import BossBattle from "components/games/BossBattle";
 import WordRain from "components/games/WordRain";
+import TowerClimb from "components/games/TowerClimb";
+import Shop from "components/games/Shop";
+import Garden from "components/games/Garden";
+import { balanceOf } from "utils/shop";
 import { WordItem } from "types";
 import { dateKey } from "utils/dates";
 import { pickBosses, MIN_POOL } from "utils/boss";
 import { rainWords, RAIN_MIN_WORDS } from "utils/wordRain";
+import { TOWER_MIN_WORDS } from "utils/tower";
 import { profileOf, dailyStreak, wordleWords, TF_MIN_WORDS, MEMORY_MIN_PAIRS, buildMemoryCards, TF_SECONDS } from "utils/games";
 
-type GameId = "wordle-daily" | "wordle" | "tf" | "memory" | "boss" | "rain";
+type GameId = "wordle-daily" | "wordle" | "tf" | "memory" | "boss" | "rain" | "tower" | "garden";
 
 const Grid = styled.div`
   display: grid;
@@ -104,6 +109,8 @@ export default function GamesPage() {
   if (game === "tf") return <PageContainer><TrueFalse words={words} onAnswer={answer} onExit={exit} /></PageContainer>;
   if (game === "boss") return <PageContainer><BossBattle words={words} onAnswer={answer} onExit={exit} /></PageContainer>;
   if (game === "rain") return <PageContainer><WordRain words={rainWords(words)} onAnswer={answer} onExit={exit} /></PageContainer>;
+  if (game === "garden") return <PageContainer><Garden words={words} onExit={exit} /></PageContainer>;
+  if (game === "tower") return <PageContainer><TowerClimb words={words} onAnswer={answer} onExit={exit} /></PageContainer>;
   if (game === "memory") return <PageContainer><MemoryFlip words={words} onExit={exit} /></PageContainer>;
 
   const best = (key: string) => (profile.best[key] ? `Kỷ lục: ${profile.best[key]}` : "Chưa có kỷ lục");
@@ -117,7 +124,7 @@ export default function GamesPage() {
           <MutedText>Học mà chơi: kiếm xu, phá kỷ lục và giữ chuỗi thử thách hằng ngày.</MutedText>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div className="coins">{profile.coins} 🪙</div>
+          <div className="coins">{balanceOf(profile)} 🪙</div>
           <MutedText>{profile.played} ván đã chơi</MutedText>
         </div>
       </Hero>
@@ -207,12 +214,33 @@ export default function GamesPage() {
               Chơi
             </MyButton>
           </GameTile>
+
+          <GameTile $disabled={words.length < TOWER_MIN_WORDS}>
+            <span className="icon">🗼</span>
+            <span className="name">Leo tháp</span>
+            <span className="desc">Mỗi tầng một câu hỏi, càng lên cao thẻ càng khó và câu hỏi càng lắt léo. Bạn leo được bao nhiêu tầng?</span>
+            <span className="record">{words.length >= TOWER_MIN_WORDS ? best("tower") : `Cần ít nhất ${TOWER_MIN_WORDS} thẻ`}</span>
+            <MyButton variant="primary" disabled={words.length < TOWER_MIN_WORDS} onClick={() => setGame("tower")}>
+              Leo
+            </MyButton>
+          </GameTile>
+
+          <GameTile $disabled={words.length < 1}>
+            <span className="icon">🌳</span>
+            <span className="name">Vườn từ vựng</span>
+            <span className="desc">Mỗi thẻ là một cây: ôn đều thì cây lớn và ra hoa, bỏ quên thì héo. Nhìn là biết thẻ nào sắp quên.</span>
+            <span className="record">{words.length >= 1 ? `${words.length} cây trong vườn` : "Cần ít nhất 1 thẻ"}</span>
+            <MyButton variant="primary" disabled={words.length < 1} onClick={() => setGame("garden")}>
+              Vào vườn
+            </MyButton>
+          </GameTile>
         </Grid>
         <MutedText style={{ marginTop: 12 }}>
           Lịch ôn chỉ thay đổi khi: thắng/thua ở Đoán chữ, hạ hoặc thua trùm, và những từ bạn trả lời sai ở Đúng/sai hay để rơi xuống đất ở Mưa chữ. Lật thẻ chỉ để khởi động nên không đổi lịch.
           Điểm, xu và kỷ lục lưu ngay trên trình duyệt này và được đồng bộ cùng dữ liệu học khi bạn dùng Google Drive.
         </MutedText>
       </Panel>
+      <Shop />
     </PageContainer>
   );
 }

@@ -16,13 +16,16 @@ import {
 } from "utils/merge";
 import { dateKey } from "utils/dates";
 import { recordStudy, undoStudy, grantMonthlyFreezes } from "utils/streak";
-import { applyGameResult, GameResult } from "utils/games";
+import { applyGameResult, GameResult, profileOf } from "utils/games";
+import { purchase, equip, unequip, equippedData, applyAccent, Slot } from "utils/shop";
+import { TrashEntry, pruneTrash, trashWords, trashDeck, restoreEntry } from "utils/trash";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
 const STORAGE_STATS_KEY = "memcard_stats";
 const STORAGE_SETTINGS_KEY = "memcard_settings";
 const STORAGE_TOMBSTONES_KEY = "memcard_tombstones";
+const STORAGE_TRASH_KEY = "memcard_trash";
 
 // One-time move of data saved under the old "memocard_*" keys
 (function migrateLegacyKeys() {
@@ -60,6 +63,13 @@ interface CollectionContextType {
   reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
   undoReviewCount: () => void;
   recordGame: (result: GameResult) => void;
+  trash: TrashEntry[];
+  restoreFromTrash: (entryId: string) => { ok: boolean; error?: string };
+  removeFromTrash: (entryId: string) => void;
+  emptyTrash: () => void;
+  buyItem: (id: string) => { ok: boolean; error?: string };
+  equipItem: (id: string) => { ok: boolean; error?: string };
+  unequipSlot: (slot: Slot) => void;
   recordReview: (collectionPathname: string, wordId: string | number, isCorrect?: boolean) => void;
   bulkImportWords: (collectionPathname: string, text: string) => number;
   importSharedCollection: (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }) => string;
@@ -169,6 +179,23 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     } catch (e) {}
   }, [tombstones]);
 
+  // Recently deleted cards and decks, kept on this device so a mistake can be undone
+  const [trash, setTrash] = useState<TrashEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_TRASH_KEY);
+      if (saved) return pruneTrash(JSON.parse(saved));
+    } catch (e) {}
+    return [];
+  });
+  const trashRef = useRef(trash);
+  trashRef.current = trash;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_TRASH_KEY, JSON.stringify(trash));
+    } catch (e) {}
+  }, [trash]);
+
   const recordDeletedWords = useCallback((deckPathname: string, ids: (string | number)[]) => {
     const deck = collectionsRef.current.find((c) => c.pathname === deckPathname);
     if (!deck || ids.length === 0) return;
@@ -264,6 +291,29 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     setStats((prev) => applyGameResult(prev, result));
   }, []);
 
+  // Shop. Reads the latest stats through a ref so two quick clicks can't spend the same coins twice.
+  const statsRef = useRef(stats);
+  statsRef.current = stats;
+  const commitShop = useCallback((result: { stats: UserStats; error?: string }) => {
+    if (result.error) return { ok: false, error: result.error };
+    statsRef.current = result.stats;
+    setStats(result.stats);
+    return { ok: true };
+  }, []);
+  const buyItem = useCallback((id: string) => commitShop(purchase(statsRef.current, id)), [commitShop]);
+  const equipItem = useCallback((id: string) => commitShop(equip(statsRef.current, id)), [commitShop]);
+  const unequipSlot = useCallback((slot: Slot) => {
+    const next = unequip(statsRef.current, slot);
+    statsRef.current = next;
+    setStats(next);
+  }, []);
+
+  // The equipped accent colour recolours the whole app
+  const accent = equippedData(profileOf(stats), "accent");
+  useEffect(() => {
+    applyAccent(accent);
+  }, [accent]);
+
   // Collection CRUD
   const addCollection = useCallback(
     (name: string, category = "Tổng hợp", description = "", color = "#3b82f6") => {
@@ -332,7 +382,10 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
   const deleteCollection = useCallback((pathname: string) => {
     const deck = collectionsRef.current.find((c) => c.pathname === pathname);
-    if (deck) recordDeletedDecks([deck]);
+    if (deck) {
+      recordDeletedDecks([deck]);
+      setTrash((t) => trashDeck(t, deck));
+    }
     setCollections((prev) => prev.filter((c) => c.pathname !== pathname));
   }, [recordDeletedDecks]);
 
@@ -384,6 +437,9 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   );
 
   const deleteWord = useCallback((collectionPathname: string, wordId: string | number) => {
+    const deck = collectionsRef.current.find((c) => c.pathname === collectionPathname);
+    const gone = deck?.words.filter((w) => String(w.id) === String(wordId)) || [];
+    if (deck && gone.length) setTrash((t) => trashWords(t, deck, gone));
     recordDeletedWords(collectionPathname, [wordId]);
     setCollections((prev) =>
       prev.map((coll) => {
@@ -601,6 +657,30 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     [collections]
   );
 
+  const restoreFromTrash = useCallback((entryId: string) => {
+    const entry = trashRef.current.find((e) => e.id === entryId);
+    if (!entry) return { ok: false, error: "Mục này không còn trong thùng rác." };
+    const result = restoreEntry(collectionsRef.current, entry);
+    if (result.error) return { ok: false, error: result.error };
+    setCollections(result.collections);
+    // forget the deletion record, otherwise merging a backup from another device would delete it again
+    const forget = result.forget;
+    if (forget) {
+      setTombstones((prev) => {
+        const decks = { ...prev.decks };
+        const words = { ...prev.words };
+        if (forget.deck) delete decks[forget.deck];
+        if (forget.word) delete words[forget.word];
+        return { decks, words };
+      });
+    }
+    setTrash((t) => t.filter((e) => e.id !== entryId));
+    return { ok: true };
+  }, []);
+
+  const removeFromTrash = useCallback((entryId: string) => setTrash((t) => t.filter((e) => e.id !== entryId)), []);
+  const emptyTrash = useCallback(() => setTrash([]), []);
+
   // Backup JSON export
   const exportToJSON = useCallback((): string => {
     const backupData = {
@@ -716,8 +796,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const deleteWords = useCallback((collectionPathname: string, ids: (string | number)[]) => {
-    recordDeletedWords(collectionPathname, ids);
     const idSet = new Set(ids.map(String));
+    const deck = collectionsRef.current.find((c) => c.pathname === collectionPathname);
+    const gone = deck?.words.filter((w) => idSet.has(String(w.id))) || [];
+    if (deck && gone.length) setTrash((t) => trashWords(t, deck, gone));
+    recordDeletedWords(collectionPathname, ids);
     setCollections((prev) =>
       prev.map((c) =>
         c.pathname !== collectionPathname ? c : { ...c, updatedAt: Date.now(), words: c.words.filter((w) => !idSet.has(String(w.id))) }
@@ -773,6 +856,13 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     reviewWord,
     undoReviewCount,
     recordGame,
+    trash,
+    restoreFromTrash,
+    removeFromTrash,
+    emptyTrash,
+    buyItem,
+    equipItem,
+    unequipSlot,
     recordReview,
     bulkImportWords,
     importSharedCollection,

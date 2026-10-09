@@ -44,7 +44,10 @@ export interface DailyResult {
 }
 
 export interface GameProfile {
-  coins: number;
+  coins: number; // total coins ever earned (never goes down)
+  spent?: number; // total coins spent in the shop; the balance is coins - spent
+  owned?: string[]; // shop item ids
+  equipped?: Record<string, string>; // slot -> item id
   played: number;
   best: Record<string, number>; // game id -> best score (higher is better)
   daily: Record<string, DailyResult>; // 'YYYY-MM-DD' -> result of the daily word challenge

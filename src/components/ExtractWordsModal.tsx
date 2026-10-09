@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import MyModal from "components/MyModal";
 import MyButton from "components/MyButton";
 import { MyTextarea } from "components/MyInput";
 import { CardLoader } from "components/Loader";
 import { WordItem } from "types";
 import { baseFormSync, formatPos, lookupLocal, prefetch } from "utils/localDict";
-import { extractCandidates, tokenize, MAX_TEXT_LENGTH } from "utils/extractWords";
+import { extractCandidates, tokenize, subtitleToText, MAX_TEXT_LENGTH } from "utils/extractWords";
 
 interface Props {
   existingSources: string[];
@@ -23,7 +23,9 @@ interface Row {
   example: string;
 }
 
-const MAX_ROWS = 200;
+const MAX_ROWS = 1500; // kept after analysis; the list below shows them a page at a time
+const LOOKUP_LIMIT = 3000;
+const PAGE = 60;
 const LEVELS = [
   { label: "Hiện tất cả", skipTop: 0 },
   { label: "Bỏ 500 từ phổ biến nhất", skipTop: 500 },
@@ -39,9 +41,27 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
   const [unknown, setUnknown] = useState(0);
   const [level, setLevel] = useState(2);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [shown, setShown] = useState(PAGE);
+  const [fileNote, setFileNote] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const have = useMemo(() => new Set(existingSources.map((s) => s.trim().toLowerCase())), [existingSources]);
   const visible = useMemo(() => (rows || []).filter((r) => r.rank === 0 || r.rank > LEVELS[level].skipTop), [rows, level]);
+
+  // .srt / .vtt subtitles are cleaned into running text; any other text file is used as it is
+  const loadFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const raw = await file.text();
+      const subtitles = /\.(srt|vtt|ass|ssa)$/i.test(file.name) || /-->/.test(raw.slice(0, 2000));
+      const cleaned = subtitles ? subtitleToText(raw) : raw;
+      setText(cleaned.slice(0, MAX_TEXT_LENGTH));
+      setRows(null);
+      setFileNote(`${file.name}: ${cleaned.length.toLocaleString("vi-VN")} ký tự${subtitles ? " (đã bỏ thời gian và định dạng phụ đề)" : ""}`);
+    } catch {
+      setFileNote("Không đọc được tệp này.");
+    }
+  };
 
   const analyse = async () => {
     setBusy(true);
@@ -51,7 +71,7 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
       const candidates = extractCandidates(text, baseFormSync, have);
       const found: Row[] = [];
       let missing = 0;
-      for (const c of candidates.slice(0, MAX_ROWS * 2)) {
+      for (const c of candidates.slice(0, LOOKUP_LIMIT)) {
         if (found.length >= MAX_ROWS) break;
         const entry = await lookupLocal(c.word);
         const target = entry ? entry.vi || (entry.def ? `${entry.pos ? `(${formatPos(entry.pos)}) ` : ""}${entry.def}` : "") : "";
@@ -70,6 +90,7 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
         });
       }
       setUnknown(missing);
+      setShown(PAGE);
       setRows(found);
       const firstLevel = found.filter((r) => r.rank === 0 || r.rank > LEVELS[level].skipTop);
       setSelected(new Set(firstLevel.slice(0, 30).map((r) => r.word)));
@@ -124,9 +145,16 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
-          Dán một bài báo, email hoặc đoạn truyện tiếng Anh. MemCard tìm những từ bạn chưa có, gộp các dạng chia (went, going → go), tự điền nghĩa từ từ điển offline và lấy chính
+          Dán một bài báo, email, đoạn truyện hoặc nạp phụ đề phim (.srt). MemCard tìm những từ bạn chưa có, gộp các dạng chia (went, going → go), tự điền nghĩa từ từ điển offline và lấy chính
           câu trong bài làm ví dụ. Toàn bộ xử lý ngay trên trình duyệt.
         </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input ref={fileRef} type="file" accept=".srt,.vtt,.txt,text/plain" onChange={(e) => loadFile(e.target.files?.[0])} style={{ display: "none" }} aria-label="Chọn tệp phụ đề hoặc văn bản" />
+          <MyButton variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+            📄 Nạp tệp phụ đề (.srt, .vtt) hoặc .txt
+          </MyButton>
+          {fileNote && <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{fileNote}</span>}
+        </div>
         <MyTextarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -172,7 +200,7 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
               </span>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {visible.map((r) => (
+                {visible.slice(0, shown).map((r) => (
                   <label
                     key={r.word}
                     style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderRadius: 10, border: "1px solid var(--border-color, #e2e8f0)", cursor: "pointer" }}
@@ -189,6 +217,13 @@ export default function ExtractWordsModal({ existingSources, onAdd, onClose }: P
                     </span>
                   </label>
                 ))}
+              </div>
+            )}
+            {visible.length > shown && (
+              <div style={{ textAlign: "center" }}>
+                <MyButton variant="ghost" size="sm" onClick={() => setShown((n) => n + PAGE)}>
+                  Xem thêm ({visible.length - shown} từ)
+                </MyButton>
               </div>
             )}
             {unknown > 0 && (

@@ -62,7 +62,7 @@ const StyledButton = styled.button<StyledButtonProps>`
     switch (props.$variant) {
       case "primary":
         return `
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: linear-gradient(135deg, var(--btn-from, #3b82f6) 0%, var(--btn-to, #2563eb) 100%);
           color: white;
           box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
           &:hover {

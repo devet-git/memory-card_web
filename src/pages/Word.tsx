@@ -19,7 +19,8 @@ import {
   MdAutoAwesome,
   MdMic,
   MdOutlineArticle,
-  MdForum
+  MdForum,
+  MdOutlinePhotoCamera
 } from "react-icons/md";
 import { IoFlashOutline } from "react-icons/io5";
 import { AiFillStar, AiOutlineStar, AiOutlinePlus, AiOutlineDelete, AiOutlineEdit } from "react-icons/ai";
@@ -46,6 +47,8 @@ import AIGenerateModal from "components/ai/AIGenerateModal";
 import SentencePractice from "components/study/SentencePractice";
 import Speaking from "components/study/Speaking";
 import AIStoryModal from "components/ai/AIStoryModal";
+import AIImageWordsModal from "components/ai/AIImageWordsModal";
+import TrashModal from "components/TrashModal";
 import Dictation from "components/study/Dictation";
 import Cloze from "components/study/Cloze";
 import Matching from "components/study/Matching";
@@ -915,6 +918,8 @@ export default function WordPage() {
   const [showAIStory, setShowAIStory] = useState(false);
   const [showSuggestWords, setShowSuggestWords] = useState(false);
   const [showExtractWords, setShowExtractWords] = useState(false);
+  const [showImageWords, setShowImageWords] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWord, setEditingWord] = useState<WordItem | null>(null);
 
@@ -1559,6 +1564,13 @@ export default function WordPage() {
                 { label: "Nhập hàng loạt / CSV / Anki", icon: <MdViewModule />, onClick: () => setShowBulkModal(true) },
                 { label: "Gợi ý từ phổ biến (offline)", icon: <MdOutlineLightbulb />, onClick: () => setShowSuggestWords(true) },
                 { label: "Thêm từ từ đoạn văn (offline)", icon: <MdOutlineArticle />, onClick: () => setShowExtractWords(true) },
+                {
+                  label: `Thêm từ từ ảnh${aiReady ? "" : " 🔒"}`,
+                  icon: <MdOutlinePhotoCamera />,
+                  dim: !aiReady,
+                  title: aiReady ? "Chụp hoặc chọn ảnh, AI trích xuất từ vựng" : "Cần nhập API key AI để dùng tính năng này",
+                  onClick: () => setShowImageWords(true)
+                },
                 // Dimmed until an API key is set; clicking then explains and offers to add one
                 {
                   label: `Tạo thẻ bằng AI${aiReady ? "" : " 🔒"}`,
@@ -1574,10 +1586,10 @@ export default function WordPage() {
                   title: aiReady ? "AI viết đoạn văn dùng các từ bạn hay sai" : "Cần nhập API key AI để dùng tính năng này",
                   onClick: () => setShowAIStory(true)
                 },
+                { label: "Thùng rác (khôi phục thẻ đã xóa)", icon: <AiOutlineDelete />, dividerBefore: true, onClick: () => setShowTrash(true) },
                 {
                   label: "Xuất CSV",
                   icon: <MdTableRows />,
-                  dividerBefore: true,
                   onClick: () =>
                     downloadTextFile(collectionToCsv(selectedCollection.words), `${safeFileName(selectedCollection)}.csv`, "text/csv;charset=utf-8")
                 },
@@ -2696,6 +2708,17 @@ export default function WordPage() {
         <ExtractWordsModal
           existingSources={words.map((w) => w.source)}
           onClose={() => setShowExtractWords(false)}
+          onAdd={(list) => {
+            if (!collectionName) return;
+            [...list].reverse().forEach((w) => addWord(collectionName, w));
+          }}
+        />
+      )}
+      {showTrash && <TrashModal onClose={() => setShowTrash(false)} />}
+      {showImageWords && (
+        <AIImageWordsModal
+          existingSources={words.map((w) => w.source)}
+          onClose={() => setShowImageWords(false)}
           onAdd={(list) => {
             if (!collectionName) return;
             [...list].reverse().forEach((w) => addWord(collectionName, w));

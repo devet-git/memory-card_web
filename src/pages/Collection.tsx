@@ -5,6 +5,7 @@ import { MdOutlineFileUpload, MdOutlineFileDownload } from "react-icons/md";
 import useCollectionContext from "contexts/Collection";
 import Collection from "components/Collection";
 import MyButton from "components/MyButton";
+import TrashModal from "components/TrashModal";
 import { MyInput, MyTextarea } from "components/MyInput";
 import MyModal from "components/MyModal";
 import SearchSelect from "components/SearchSelect";
@@ -175,11 +176,12 @@ const EmptyState = styled.div`
 `;
 
 export default function CollectionPage() {
-  const { collections, addCollection, exportToJSON, importFromJSON } = useCollectionContext();
+  const { collections, addCollection, exportToJSON, importFromJSON, trash } = useCollectionContext();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
   const [newDeckCategory, setNewDeckCategory] = useState("");
   const [newDeckDesc, setNewDeckDesc] = useState("");
@@ -273,6 +275,10 @@ export default function CollectionPage() {
               Tạo bộ thẻ mới
             </MyButton>
 
+            <MyButton variant="secondary" size="md" onClick={() => setShowTrash(true)} title="Khôi phục thẻ và bộ thẻ vừa xóa">
+              🗑️ Thùng rác{trash.length > 0 ? ` (${trash.length})` : ""}
+            </MyButton>
+
             <MyButton
               variant="secondary"
               size="md"
@@ -350,6 +356,7 @@ export default function CollectionPage() {
       </CollectionsList>
 
       {/* CREATE MODAL */}
+      {showTrash && <TrashModal onClose={() => setShowTrash(false)} />}
       {showAddModal && (
         <MyModal
           footer={

@@ -30,6 +30,7 @@ import DonateModal from "components/DonateModal";
 import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
+import { levelInfo, xpOf } from "utils/xp";
 import CloseFooter from "components/CloseFooter";
 import StudySettingsModal from "components/StudySettingsModal";
 import GlobalSearch from "components/GlobalSearch";
@@ -188,6 +189,13 @@ const StreakBadge = styled.div`
     @media (max-width: 768px) {
       font-size: 15px;
     }
+  }
+`;
+
+// Same pill as the streak, hidden on narrow screens where the header is already full
+const LevelChip = styled(StreakBadge)`
+  @media (max-width: 480px) {
+    display: none;
   }
 `;
 
@@ -600,6 +608,9 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               <HiFire />
               <span>{stats.studyStreakDays} ngày</span>
             </StreakBadge>
+            <LevelChip as={Link} to="/stats" title={`${levelInfo(xpOf(stats)).title} • ${xpOf(stats)} XP`} style={{ textDecoration: "none" }}>
+              <span>Lv {levelInfo(xpOf(stats)).level}</span>
+            </LevelChip>
 
             {/* DESKTOP CONTROLS */}
             <DesktopOnlyControls>
