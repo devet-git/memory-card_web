@@ -1,32 +1,19 @@
 # MemCard
 
-### `npm test`
+Ứng dụng flashcard học từ vựng (React + TypeScript, Create React App). Toàn bộ dữ liệu lưu trong trình duyệt (localStorage); có thể tuỳ chọn đồng bộ sang Google Drive của chính bạn.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Chạy dự án
 
-### `npm run build`
+```bash
+npm install
+npm start          # http://localhost:3000
+npm test           # chạy test (watch)
+npm run lint       # kiểm tra kiểu TypeScript
+npm run build      # build production vào thư mục build/
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Đồng bộ Google Drive
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Xem hướng dẫn từng bước (tạo OAuth Client ID, bật Drive API, xử lý sự cố) tại [docs/GOOGLE_DRIVE_SETUP.md](docs/GOOGLE_DRIVE_SETUP.md).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+Tóm tắt: tạo OAuth Client ID loại *Web application* với *Authorized JavaScript origin* là địa chỉ bạn mở app, bật Google Drive API, rồi dán Client ID vào cửa sổ Google Drive trong app hoặc đặt `GOOGLE_CLIENT_ID` trong `.env`.

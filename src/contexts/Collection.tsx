@@ -15,6 +15,7 @@ import {
   Tombstones
 } from "utils/merge";
 import { dateKey } from "utils/dates";
+import { contentHash } from "utils/backupHash";
 import { recordStudy, undoStudy, grantMonthlyFreezes } from "utils/streak";
 import { applyGameResult, GameResult, profileOf } from "utils/games";
 import { applyGrammarResult, SessionResult } from "utils/grammar";
@@ -77,6 +78,8 @@ interface CollectionContextType {
   importSharedCollection: (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }) => string;
   // Backup & Restore
   exportToJSON: () => string;
+  /** Same as exportToJSON, but always from the very latest data (safe to call right after a merge, before React re-renders). */
+  exportLatest: () => string;
   importFromJSON: (jsonData: string) => { success: boolean; count?: number; error?: string };
   transferWords: (opts: {
     from: string;
@@ -87,7 +90,7 @@ interface CollectionContextType {
   }) => { moved: number; skipped: number; pathname?: string; error?: string };
   bulkUpdateWords: (collectionPathname: string, ids: (string | number)[], patch: Partial<WordItem>) => void;
   deleteWords: (collectionPathname: string, ids: (string | number)[]) => void;
-  mergeFromJSON: (jsonData: string) => { success: boolean; error?: string };
+  mergeFromJSON: (jsonData: string) => { success: boolean; error?: string; merged?: string; changed?: boolean };
   resetToDefaultData: () => void;
 }
 
@@ -110,6 +113,11 @@ const defaultSettings: AppSettings = {
   autoSpeak: false,
   reverseReview: true
 };
+
+/** The JSON written to backups, Drive and exports. */
+function buildBackup(collections: CollectionItem[], stats: UserStats, tombstones: Tombstones): string {
+  return JSON.stringify({ version: 3, exportDate: new Date().toISOString(), collections, stats, tombstones: pruneTombstones(tombstones) }, null, 2);
+}
 
 const CollectionContext = createContext<CollectionContextType>({} as CollectionContextType);
 
@@ -689,16 +697,8 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   const emptyTrash = useCallback(() => setTrash([]), []);
 
   // Backup JSON export
-  const exportToJSON = useCallback((): string => {
-    const backupData = {
-      version: 3,
-      exportDate: new Date().toISOString(),
-      collections,
-      stats,
-      tombstones: pruneTombstones(tombstones)
-    };
-    return JSON.stringify(backupData, null, 2);
-  }, [collections, stats, tombstones]);
+  const exportToJSON = useCallback((): string => buildBackup(collections, stats, tombstones), [collections, stats, tombstones]);
+  const exportLatest = useCallback((): string => buildBackup(collectionsRef.current, statsRef.current, tombstonesRef.current), []);
 
   // Restore JSON import
   const importFromJSON = useCallback((jsonData: string) => {
@@ -821,12 +821,20 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
       const parsed = JSON.parse(jsonData);
       const remoteCollections: CollectionItem[] = Array.isArray(parsed) ? parsed : parsed?.collections;
       if (!Array.isArray(remoteCollections)) return { success: false, error: "Định dạng JSON không hợp lệ" };
+      const before = buildBackup(collectionsRef.current, statsRef.current, tombstonesRef.current);
       const mergedTombstones = pruneTombstones(mergeTombstones(tombstonesRef.current, normalizeTombstones(parsed?.tombstones)));
+      const mergedCollections = mergeCollections(collectionsRef.current, remoteCollections, mergedTombstones);
+      const mergedStats = parsed?.stats ? mergeStats(statsRef.current, parsed.stats) : statsRef.current;
+      // refs first, so an export made right away (before React re-renders) already contains the merge
       tombstonesRef.current = mergedTombstones;
+      collectionsRef.current = mergedCollections;
+      statsRef.current = mergedStats;
+      // state is updated through functions (merging is idempotent), so an edit made at the same moment is not lost
       setTombstones(mergedTombstones);
       setCollections((prev) => mergeCollections(prev, remoteCollections, mergedTombstones));
       if (parsed?.stats) setStats((prev) => mergeStats(prev, parsed.stats));
-      return { success: true };
+      const merged = buildBackup(mergedCollections, mergedStats, mergedTombstones);
+      return { success: true, merged, changed: contentHash(before) !== contentHash(merged) };
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi đọc dữ liệu" };
     }
@@ -875,6 +883,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     bulkImportWords,
     importSharedCollection,
     exportToJSON,
+    exportLatest,
     importFromJSON,
     transferWords,
     bulkUpdateWords,

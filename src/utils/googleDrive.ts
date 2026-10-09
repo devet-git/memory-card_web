@@ -1,263 +1,129 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  User,
-  signOut
-} from "firebase/auth";
-import firebaseConfig from "../firebase-applet-config.json";
+// Minimal Google Drive client for one JSON backup file. The scope is drive.file, so MemCard can only
+// see files it created itself (never the rest of the user's Drive).
 
-// Initialize Firebase App
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export { getAccessToken } from "utils/googleAuth";
 
-const provider = new GoogleAuthProvider();
-// Google Drive scope for file management created by this app
-provider.addScope("https://www.googleapis.com/auth/drive.file");
-provider.setCustomParameters({
-  prompt: "consent"
-});
+export const BACKUP_FILE_NAME = "memcard_backup.json";
+const API = "https://www.googleapis.com/drive/v3";
+const UPLOAD = "https://www.googleapis.com/upload/drive/v3";
+const REQUEST_TIMEOUT_MS = 30000;
 
-let isSigningIn = false;
-// The OAuth access token lives ~1h; keep it across reloads so auto-sync keeps working.
-const TOKEN_STORAGE_KEY = "memcard_gdrive_token";
-const TOKEN_TTL_MS = 55 * 60 * 1000;
+export type DriveErrorCode =
+  | "auth" // token missing, expired or revoked
+  | "api_disabled" // the Google Drive API is not enabled for the OAuth client's project
+  | "permission" // the token lacks the Drive scope, or the account may not use this client
+  | "quota" // rate limit or storage full
+  | "network"
+  | "not_found"
+  | "other";
 
-function loadStoredToken(): string | null {
-  try {
-    const raw = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!raw) return null;
-    const { token, expiresAt } = JSON.parse(raw);
-    if (token && Date.now() < expiresAt) return token;
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-  } catch (e) {}
-  return null;
+export class DriveError extends Error {
+  code: DriveErrorCode;
+  status?: number;
+  constructor(code: DriveErrorCode, message: string, status?: number) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
 }
 
-function storeToken(token: string | null) {
-  try {
-    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({ token, expiresAt: Date.now() + TOKEN_TTL_MS }));
-    else localStorage.removeItem(TOKEN_STORAGE_KEY);
-  } catch (e) {}
+export interface RemoteFile {
+  id: string;
+  modifiedTime: string;
 }
 
-let cachedAccessToken: string | null = loadStoredToken();
-let currentUser: User | null = null;
+interface GoogleErrorBody {
+  error?: { code?: number; message?: string; status?: string; errors?: { reason?: string }[]; details?: { reason?: string; metadata?: { activationUrl?: string } }[] };
+}
 
-// Track auth state
-export const initAuth = (
-  onAuthSuccess?: (user: User, token: string) => void,
-  onAuthFailure?: () => void
-) => {
-  return onAuthStateChanged(auth, async (user: User | null) => {
-    currentUser = user;
-    if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        if (onAuthFailure) onAuthFailure();
-      }
-    } else {
-      cachedAccessToken = null;
-      storeToken(null);
-      if (onAuthFailure) onAuthFailure();
-    }
-  });
-};
+/** Turns a failed Drive response into an error whose message tells the user what to do. */
+export function classifyDriveError(status: number, body: GoogleErrorBody | null): DriveError {
+  const err = body?.error;
+  const reasons = [...(err?.errors || []).map((e) => e.reason), ...(err?.details || []).map((d) => d.reason)].filter(Boolean) as string[];
+  const has = (...r: string[]) => reasons.some((x) => r.includes(x));
+  const text = err?.message || "";
 
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
+  if (status === 401) return new DriveError("auth", "Phiên đăng nhập Google đã hết hạn. Hãy kết nối lại.", status);
+  if (status === 403 && (has("accessNotConfigured", "SERVICE_DISABLED") || /has not been used|is disabled|accessNotConfigured/i.test(text))) {
+    return new DriveError("api_disabled", "Google Drive API chưa được bật cho dự án chứa OAuth Client ID này. Hãy bật “Google Drive API” trong Google Cloud Console (APIs & Services → Library), đợi một–hai phút rồi thử lại.", status);
+  }
+  if (status === 403 && has("insufficientPermissions", "ACCESS_TOKEN_SCOPE_INSUFFICIENT")) {
+    return new DriveError("permission", "Tài khoản chưa cấp quyền Google Drive. Hãy ngắt kết nối rồi đăng nhập lại và tích chọn quyền truy cập Drive.", status);
+  }
+  if (status === 403 && has("rateLimitExceeded", "userRateLimitExceeded", "dailyLimitExceeded", "RATE_LIMIT_EXCEEDED")) {
+    return new DriveError("quota", "Google đang giới hạn số yêu cầu. Hãy thử lại sau ít phút.", status);
+  }
+  if (status === 403 && has("storageQuotaExceeded")) {
+    return new DriveError("quota", "Dung lượng Google Drive của bạn đã đầy.", status);
+  }
+  if (status === 429) return new DriveError("quota", "Google đang giới hạn số yêu cầu. Hãy thử lại sau ít phút.", status);
+  if (status === 404) return new DriveError("not_found", "Không tìm thấy tệp sao lưu trên Google Drive.", status);
+  if (status === 403) return new DriveError("permission", text || "Google từ chối quyền truy cập Drive.", status);
+  return new DriveError("other", text ? `Lỗi Google Drive (${status}): ${text}` : `Lỗi Google Drive (${status}).`, status);
+}
+
+async function request(url: string, token: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  let res: Response;
   try {
-    isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error("Không lấy được Access Token từ Google");
-    }
-
-    cachedAccessToken = credential.accessToken;
-    storeToken(cachedAccessToken);
-    currentUser = result.user;
-    return { user: result.user, accessToken: cachedAccessToken };
-  } catch (error: any) {
-    console.error("Lỗi đăng nhập Google:", error);
-    throw error;
+    res = await fetch(url, { ...init, signal: ctrl.signal, headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
+  } catch (err: any) {
+    throw new DriveError("network", err?.name === "AbortError" ? "Google Drive phản hồi quá lâu. Hãy thử lại." : "Không kết nối được tới Google Drive. Hãy kiểm tra mạng.");
   } finally {
-    isSigningIn = false;
+    window.clearTimeout(timer);
   }
-};
+  if (!res.ok) throw classifyDriveError(res.status, await res.json().catch(() => null));
+  return res;
+}
 
-export const getAccessToken = async (): Promise<string | null> => {
-  if (cachedAccessToken && !loadStoredToken()) cachedAccessToken = null; // expired
-  return cachedAccessToken;
-};
+/** Every file MemCard writes is tagged with this, so it can tell its own file from anything another app put in the same Drive. */
+export const APP_TAG = { app: "memcard" } as const;
 
-export const getCurrentUser = (): User | null => {
-  return currentUser || auth.currentUser;
-};
+interface RawFile {
+  id?: unknown;
+  modifiedTime?: unknown;
+  appProperties?: Record<string, string> | null;
+}
 
-export const logoutGoogle = async (): Promise<void> => {
-  await signOut(auth);
-  cachedAccessToken = null;
-  storeToken(null);
-  currentUser = null;
-};
-
-const BACKUP_FILE_NAME = "memcard_backup.json";
-
-// Find existing backup file on Google Drive
-async function findBackupFile(accessToken: string): Promise<{ id: string; modifiedTime: string } | null> {
-  const q = encodeURIComponent(`name = '${BACKUP_FILE_NAME}' and trashed = false`);
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime)`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-  );
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || "Không thể truy vấn Google Drive");
-  }
-
+/**
+ * MemCard's backup files, newest first (duplicates can exist if two devices created one at once).
+ * Only files that are safe to touch are returned: files tagged by MemCard, or, when there are none, untagged files with
+ * the same name (backups written by earlier MemCard versions, which are tagged on the next upload). A file tagged by
+ * another app is never returned, so a Google Cloud project shared by several apps cannot lead MemCard to overwrite theirs.
+ */
+export async function listBackups(token: string): Promise<RemoteFile[]> {
+  const q = encodeURIComponent(`name = '${BACKUP_FILE_NAME}' and trashed = false and 'me' in owners`);
+  const res = await request(`${API}/files?q=${q}&spaces=drive&orderBy=modifiedTime%20desc&pageSize=20&fields=files(id,modifiedTime,appProperties)`, token);
   const data = await res.json();
-  if (data.files && data.files.length > 0) {
-    return { id: data.files[0].id, modifiedTime: data.files[0].modifiedTime };
-  }
-  return null;
+  const files: RawFile[] = Array.isArray(data.files) ? data.files : [];
+  const toRemote = (f: RawFile): RemoteFile => ({ id: String(f.id), modifiedTime: String(f.modifiedTime) });
+  const own = files.filter((f) => f.appProperties?.app === APP_TAG.app);
+  if (own.length > 0) return own.map(toRemote);
+  return files.filter((f) => !f.appProperties?.app).map(toRemote);
 }
 
-/** Modified time of the backup on Drive (null if none / not signed in). */
-export async function getDriveBackupModifiedTime(): Promise<string | null> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) return null;
-  const file = await findBackupFile(accessToken);
-  return file ? file.modifiedTime : null;
+export async function downloadBackup(token: string, id: string): Promise<string> {
+  const res = await request(`${API}/files/${encodeURIComponent(id)}?alt=media`, token);
+  return res.text();
 }
 
-// Upload/Sync data to Google Drive
-export async function syncToGoogleDrive(
-  dataJson: string
-): Promise<{ success: boolean; fileId?: string; modifiedTime?: string; error?: string }> {
-  try {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      return { success: false, error: "Chưa đăng nhập Google hoặc phiên làm việc đã hết hạn" };
-    }
-
-    const existingFile = await findBackupFile(accessToken);
-
-    if (existingFile) {
-      // Update existing file content
-      const updateRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          },
-          body: dataJson
-        }
-      );
-
-      if (!updateRes.ok) {
-        throw new Error("Không thể cập nhật tệp tin trên Google Drive");
-      }
-
-      const updatedData = await updateRes.json();
-      return {
-        success: true,
-        fileId: updatedData.id,
-        modifiedTime: new Date().toISOString()
-      };
-    } else {
-      // Create new file with multipart upload
-      const metadata = {
-        name: BACKUP_FILE_NAME,
-        mimeType: "application/json",
-        description: "MemCard Flashcard Database Auto-Sync"
-      };
-
-      const boundary = "-------314159265358979323846";
-      const delimiter = "\r\n--" + boundary + "\r\n";
-      const closeDelim = "\r\n--" + boundary + "--";
-
-      const multipartRequestBody =
-        delimiter +
-        "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
-        JSON.stringify(metadata) +
-        delimiter +
-        "Content-Type: application/json\r\n\r\n" +
-        dataJson +
-        closeDelim;
-
-      const createRes = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": `multipart/related; boundary=${boundary}`
-          },
-          body: multipartRequestBody
-        }
-      );
-
-      if (!createRes.ok) {
-        throw new Error("Không thể tạo tệp mới trên Google Drive");
-      }
-
-      const newFileData = await createRes.json();
-      return {
-        success: true,
-        fileId: newFileData.id,
-        modifiedTime: new Date().toISOString()
-      };
-    }
-  } catch (err: any) {
-    return { success: false, error: err.message || "Lỗi đồng bộ Google Drive" };
-  }
-}
-
-// Download/Restore data from Google Drive
-export async function restoreFromGoogleDrive(): Promise<{
-  success: boolean;
-  data?: any;
-  modifiedTime?: string;
-  error?: string;
-}> {
-  try {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      return { success: false, error: "Chưa đăng nhập Google hoặc phiên làm việc đã hết hạn" };
-    }
-
-    const existingFile = await findBackupFile(accessToken);
-    if (!existingFile) {
-      return { success: false, error: "Không tìm thấy tệp sao lưu memcard_backup.json nào trên Google Drive của bạn" };
-    }
-
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error("Không thể tải tệp tin từ Google Drive");
-    }
-
-    const data = await res.json();
-    return {
-      success: true,
-      data,
-      modifiedTime: existingFile.modifiedTime
-    };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Lỗi khôi phục từ Google Drive" };
-  }
+/** Creates the backup (id = null) or replaces the content of one found by listBackups. Never deletes anything. */
+export async function uploadBackup(token: string, id: string | null, json: string): Promise<RemoteFile> {
+  const boundary = "memcard" + Math.random().toString(36).slice(2);
+  // An update keeps the existing name; both create and update (re)apply the MemCard tag
+  const metadata = id
+    ? { mimeType: "application/json", appProperties: APP_TAG }
+    : { name: BACKUP_FILE_NAME, mimeType: "application/json", description: "MemCard flashcard backup (auto-sync)", appProperties: APP_TAG };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`;
+  const url = id ? `${UPLOAD}/files/${encodeURIComponent(id)}?uploadType=multipart&fields=id,modifiedTime` : `${UPLOAD}/files?uploadType=multipart&fields=id,modifiedTime`;
+  const res = await request(url, token, {
+    method: id ? "PATCH" : "POST",
+    headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+    body
+  });
+  const d = await res.json();
+  return { id: String(d.id || id), modifiedTime: String(d.modifiedTime || new Date().toISOString()) };
 }

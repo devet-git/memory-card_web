@@ -15,6 +15,7 @@ import {
   MdOutlineDashboardCustomize,
   MdOutlineInsights,
   MdSportsEsports,
+  MdCloudOff,
   MdOutlineMenuBook,
   MdOutlineSettings,
   MdSearch
@@ -32,6 +33,7 @@ import GoogleDriveModal from "components/GoogleDriveModal";
 import { downloadTextFile, backupFileName } from "utils/download";
 import { isDue } from "utils/srs";
 import { levelInfo, xpOf } from "utils/xp";
+import { useSyncStatus } from "utils/syncStatus";
 import CloseFooter from "components/CloseFooter";
 import StudySettingsModal from "components/StudySettingsModal";
 import GlobalSearch from "components/GlobalSearch";
@@ -511,6 +513,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
   }, []);
 
   useAutoSync();
+  const driveSync = useSyncStatus();
   useReminder();
   const [showMobileMenuModal, setShowMobileMenuModal] = useState(false);
   const [showUtilitiesDropdown, setShowUtilitiesDropdown] = useState(false);
@@ -608,6 +611,17 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               onClick={() => setShowSearch(true)}
               title="Tìm thẻ (Ctrl+K)"
             />
+
+            {(driveSync.state === "needs-auth" || driveSync.state === "error") && (
+              <MyButton
+                variant="ghost"
+                size="sm"
+                icon={<MdCloudOff color="#dc2626" />}
+                onClick={() => setShowGoogleDriveModal(true)}
+                title={driveSync.state === "needs-auth" ? "Đồng bộ Google Drive cần kết nối lại" : `Đồng bộ Google Drive lỗi: ${driveSync.message || ""}`}
+                aria-label="Đồng bộ Google Drive cần chú ý"
+              />
+            )}
 
             <StreakBadge title={`Chuỗi ngày ôn tập liên tục của bạn • ${stats.freezes ?? 0} băng streak 🧊`}>
               <HiFire />

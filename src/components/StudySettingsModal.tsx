@@ -6,7 +6,8 @@ import { MyInput } from "components/MyInput";
 import useCollectionContext from "contexts/Collection";
 import useInstallPrompt from "hooks/useInstallPrompt";
 import { notificationsSupported } from "hooks/useReminder";
-import { getAccessToken } from "utils/googleDrive";
+import { isConnected } from "utils/googleAuth";
+import { useSyncStatus, formatSyncTime } from "utils/syncStatus";
 import AISettingsModal from "components/AISettingsModal";
 import useAIConfig from "hooks/useAIConfig";
 import { AI_PROVIDERS } from "utils/ai";
@@ -33,6 +34,7 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [showAISettings, setShowAISettings] = useState(false);
   const aiConfig = useAIConfig();
+  const sync = useSyncStatus();
 
   const permission = notificationsSupported() ? Notification.permission : "denied";
 
@@ -59,7 +61,7 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
       updateSettings({ autoSync: false });
       return;
     }
-    if (!(await getAccessToken())) {
+    if (!isConnected()) {
       setMessage("Hãy đăng nhập Google Drive trước, rồi bật tự động đồng bộ.");
       onOpenDrive();
       return;
@@ -175,8 +177,11 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
             </MyButton>
           </div>
           <Hint>
-            Khi bật, dữ liệu được gộp với bản trên Drive lúc mở app (không ghi đè) và tự tải lên sau mỗi lần thay đổi. Phiên đăng nhập Google
-            Drive hết hạn sau khoảng 1 giờ, khi đó cần đăng nhập lại. Thẻ đã xóa ở một thiết bị có thể xuất hiện lại do cơ chế gộp.
+            Khi bật, MemCard gộp dữ liệu với bản trên Drive (không bao giờ ghi đè), tự tải thay đổi lên sau vài giây và kiểm tra thay đổi từ thiết bị
+            khác khi bạn quay lại ứng dụng. Phiên Google hết hạn sau khoảng 1 giờ và được gia hạn tự động khi có thể; nếu Google cần bạn xác nhận lại, một biểu
+            tượng cảnh báo sẽ hiện ở đầu trang để bạn bấm “Kết nối lại”.
+            {settings.autoSync && sync.state === "synced" && sync.lastSync ? ` Lần đồng bộ gần nhất: ${formatSyncTime(sync.lastSync)}.` : ""}
+            {settings.autoSync && (sync.state === "error" || sync.state === "needs-auth") && sync.message ? ` ⚠ ${sync.message}` : ""}
           </Hint>
         </Row>
 
