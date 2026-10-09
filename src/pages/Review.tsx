@@ -126,8 +126,8 @@ export default function ReviewPage() {
       (document.activeElement as HTMLElement | null)?.blur?.();
       if (currentWord) {
         // Remember the scheduling fields so the answer can be undone
-        const { dueDate, intervalDays, ease, lapses, wrongCount, status, reviewCount, lastReviewed } = currentWord;
-        setHistory((h) => [...h, { item: current, before: { dueDate, intervalDays, ease, lapses, wrongCount, status, reviewCount, lastReviewed }, grade }]);
+        const { dueDate, intervalDays, ease, stability, difficulty, lapses, wrongCount, status, reviewCount, lastReviewed } = currentWord;
+        setHistory((h) => [...h, { item: current, before: { dueDate, intervalDays, ease, stability, difficulty, lapses, wrongCount, status, reviewCount, lastReviewed }, grade }]);
       }
       reviewWord(current.pathname, current.wordId, grade);
       playSound(grade >= 2 ? "correct" : "click");
@@ -336,7 +336,7 @@ export default function ReviewPage() {
             {GRADES.map((g) => (
               <RateButton key={g.grade} $color={g.color} onClick={() => rate(g.grade)} title={`Phím ${g.key}`}>
                 {g.label}
-                <small>{previewInterval(currentWord, g.grade)}</small>
+                <small>{previewInterval(currentWord, g.grade, { algorithm: settings.scheduler, retention: settings.desiredRetention })}</small>
               </RateButton>
             ))}
           </RatingRow>

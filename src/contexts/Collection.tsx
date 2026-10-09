@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import initialCollections from "utils/mockData";
 import { CollectionItem, WordItem, UserStats, AppSettings, MasteryStatus } from "types";
 import { removeAccent } from "utils/removeAccent";
-import { schedule, Grade } from "utils/srs";
+import { schedule, Grade, SrsOptions } from "utils/srs";
 import {
   mergeCollections,
   mergeStats,
@@ -236,6 +236,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     }
   }, [settings]);
 
+  // Scheduling choices are read at answer time, so the callbacks below don't change when settings do
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const srsOptions = (): SrsOptions => ({ algorithm: settingsRef.current.scheduler, retention: settingsRef.current.desiredRetention });
+
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
     setSettingsState((prev) => ({ ...prev, ...newSettings }));
   }, []);
@@ -411,7 +416,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
               String(w.id) === String(wordId)
                 ? {
                     ...w,
-                    ...schedule(w, grade ?? (status === "mastered" ? 3 : 1)),
+                    ...schedule(w, grade ?? (status === "mastered" ? 3 : 1), Date.now(), srsOptions()),
                     status,
                     reviewCount: (w.reviewCount || 0) + 1,
                     lastReviewed: Date.now()
@@ -444,7 +449,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
               }
               return {
                 ...w,
-                ...schedule(w, isCorrect ? 2 : 0),
+                ...schedule(w, isCorrect ? 2 : 0, Date.now(), srsOptions()),
                 reviewCount: count,
                 status: nextStatus,
                 lastReviewed: Date.now()
@@ -470,7 +475,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
               String(w.id) === String(wordId)
                 ? {
                     ...w,
-                    ...schedule(w, grade),
+                    ...schedule(w, grade, Date.now(), srsOptions()),
                     reviewCount: (w.reviewCount || 0) + 1,
                     lastReviewed: Date.now()
                   }

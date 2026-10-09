@@ -2348,6 +2348,8 @@ export default function WordPage() {
                         dueDate: undefined,
                         intervalDays: undefined,
                         ease: undefined,
+                        stability: undefined,
+                        difficulty: undefined,
                         lapses: undefined,
                         wrongCount: 0
                       });

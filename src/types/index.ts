@@ -16,6 +16,8 @@ export interface WordItem {
   dueDate?: number; // timestamp when the card is next due
   intervalDays?: number;
   ease?: number;
+  stability?: number; // FSRS: days until recall drops to 90%
+  difficulty?: number; // FSRS: 1 (easy) .. 10 (hard)
   lapses?: number;
   wrongCount?: number; // times answered wrong (for "hard words")
   // Memory aids
@@ -59,5 +61,7 @@ export interface AppSettings {
   reminderTime?: string; // 'HH:MM'
   autoSync?: boolean; // auto upload to Google Drive
   autoSpeak?: boolean; // read the front of a card aloud when it appears
+  scheduler?: 'sm2' | 'fsrs'; // review scheduling algorithm (default 'sm2')
+  desiredRetention?: number; // FSRS target recall probability, 0.7 - 0.97 (default 0.9)
   reverseReview?: boolean; // sometimes show well-known cards back-to-front (meaning -> term)
 }

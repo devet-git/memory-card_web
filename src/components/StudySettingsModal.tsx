@@ -10,6 +10,7 @@ import { getAccessToken } from "utils/googleDrive";
 import AISettingsModal from "components/AISettingsModal";
 import useAIConfig from "hooks/useAIConfig";
 import { AI_PROVIDERS } from "utils/ai";
+import { clampRetention } from "utils/fsrs";
 
 interface Props {
   onClose: () => void;
@@ -85,6 +86,42 @@ export default function StudySettingsModal({ onClose, onOpenDrive }: Props) {
             value={settings.dailyGoal ?? 20}
             onChange={(e) => updateSettings({ dailyGoal: Math.min(500, Math.max(1, Number(e.target.value) || 1)) })}
           />
+        </Row>
+
+        <Row>
+          <label style={{ fontWeight: 700, fontSize: 14 }}>Thuật toán lên lịch ôn tập</label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <MyButton variant={settings.scheduler !== "fsrs" ? "primary" : "secondary"} size="sm" onClick={() => updateSettings({ scheduler: "sm2" })}>
+              SM-2 (đơn giản)
+            </MyButton>
+            <MyButton variant={settings.scheduler === "fsrs" ? "primary" : "secondary"} size="sm" onClick={() => updateSettings({ scheduler: "fsrs" })}>
+              FSRS (thông minh)
+            </MyButton>
+          </div>
+          {settings.scheduler === "fsrs" && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label htmlFor="retention" style={{ fontSize: 13 }}>
+                Độ nhớ mục tiêu
+              </label>
+              <select
+                id="retention"
+                value={String(Math.round(clampRetention(settings.desiredRetention) * 100))}
+                onChange={(e) => updateSettings({ desiredRetention: Number(e.target.value) / 100 })}
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--border-color, #cbd5e1)", background: "var(--bg-primary)", color: "inherit" }}
+              >
+                {[80, 85, 90, 95].map((v) => (
+                  <option key={v} value={v}>
+                    {v}%{v === 90 ? " (khuyên dùng)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <Hint>
+            {settings.scheduler === "fsrs"
+              ? "FSRS theo dõi độ ổn định và độ khó của từng thẻ rồi chọn ngày ôn để bạn còn nhớ đúng mức mục tiêu: nhớ cao hơn thì ôn dày hơn, thấp hơn thì ít lượt ôn hơn. Thẻ đã ôn theo SM-2 được chuyển sang tự động từ khoảng cách hiện tại, không mất tiến độ."
+              : "SM-2 nhân khoảng cách ôn theo hệ số dễ của từng thẻ. Đổi sang FSRS để lịch ôn thích nghi với trí nhớ của bạn; có thể quay lại bất cứ lúc nào, tiến độ vẫn được giữ."}
+          </Hint>
         </Row>
 
         <Row>
