@@ -8,6 +8,9 @@ import { daysAgoKey, dayOfWeek } from "utils/dates";
 import { computeBadges } from "utils/badges";
 import { isLeech } from "utils/plan";
 import MyButton from "components/MyButton";
+import { buildForecast } from "utils/forecast";
+import { weekProgress, MAX_FREEZES } from "utils/streak";
+import { bestHour, hourSlots, hourToTime, MIN_REVIEWS_FOR_ADVICE } from "utils/studyHours";
 
 const Cols = styled.div`
   display: grid;
@@ -97,7 +100,7 @@ const BadgeCard = styled.div<{ $earned: boolean }>`
 const DAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 export default function StatsPage() {
-  const { collections, stats, settings } = useCollectionContext();
+  const { collections, stats, settings, updateSettings } = useCollectionContext();
   const navigate = useNavigate();
   const goal = settings.dailyGoal || 20;
   const log = useMemo(() => stats.reviewLog || {}, [stats.reviewLog]);
@@ -138,7 +141,17 @@ export default function StatsPage() {
     [words]
   );
 
-  const badges = useMemo(() => computeBadges(stats, collections), [stats, collections]);
+  const badges = useMemo(() => computeBadges(stats, collections, goal), [stats, collections, goal]);
+
+  const forecast = useMemo(() => buildForecast(collections, 14), [collections]);
+  const forecastMax = Math.max(...forecast.days.map((d) => d.count), 1);
+  const month = useMemo(() => buildForecast(collections, 30), [collections]);
+
+  const streakWeek = useMemo(() => weekProgress(stats), [stats]);
+  const slots = useMemo(() => hourSlots(stats), [stats]);
+  const slotMax = Math.max(...slots.map((s) => s.total), 1);
+  const reviewsLogged = slots.reduce((a, s) => a + s.total, 0);
+  const golden = useMemo(() => bestHour(stats), [stats]);
 
   const pct = (n: number) => (counts.total ? Math.round((n / counts.total) * 100) : 0);
 
@@ -190,6 +203,74 @@ export default function StatsPage() {
         </svg>
       </Panel>
 
+
+      <Panel>
+        <h3>Dự báo ôn tập 14 ngày tới</h3>
+        {forecast.total === 0 ? (
+          <MutedText>Chưa có thẻ nào đã lên lịch ôn. Hãy ôn vài thẻ để hệ thống tính ngày nhắc lại.</MutedText>
+        ) : (
+          <>
+            <svg viewBox="0 0 350 140" width="100%" role="img" aria-label="Biểu đồ số thẻ đến hạn trong 14 ngày tới">
+              {forecast.days.map((d, i) => {
+                const h = (d.count / forecastMax) * 90;
+                const x = i * 25 + 3;
+                return (
+                  <g key={d.key}>
+                    <rect x={x} y={110 - h} width="19" height={Math.max(h, 1)} rx="3" fill={i === 0 ? "#ef4444" : "#8b5cf6"}>
+                      <title>{`${d.key}: ${d.count} thẻ đến hạn`}</title>
+                    </rect>
+                    {d.count > 0 && (
+                      <text x={x + 9.5} y={104 - h} textAnchor="middle" fontSize="9" fill="currentColor">
+                        {d.count}
+                      </text>
+                    )}
+                    <text x={x + 9.5} y="126" textAnchor="middle" fontSize="9" fill="currentColor" opacity="0.7">
+                      {i === 0 ? "Nay" : d.date.getDate()}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+            <MutedText style={{ marginTop: 8 }}>
+              Hôm nay {forecast.days[0].count} thẻ{forecast.overdue > 0 ? ` (gồm ${forecast.overdue} thẻ quá hạn)` : ""} • 7 ngày tới{" "}
+              {forecast.days.slice(0, 7).reduce((a, d) => a + d.count, 0)} thẻ • 30 ngày tới {month.total} thẻ
+              {forecast.peak && forecast.peak.key !== forecast.days[0].key
+                ? ` • đông nhất ngày ${forecast.peak.date.getDate()}/${forecast.peak.date.getMonth() + 1} (${forecast.peak.count} thẻ)`
+                : ""}
+            </MutedText>
+          </>
+        )}
+      </Panel>
+
+      <Panel>
+        <h3>Chuỗi ngày và băng streak</h3>
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {streakWeek.days.map((d, i) => (
+            <div
+              key={d.key}
+              title={d.frozen ? `${d.key}: được băng streak bảo vệ` : d.done ? `${d.key}: đã học` : d.key}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                padding: "8px 0",
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 700,
+                background: d.frozen ? "rgba(59,130,246,0.18)" : d.done ? "rgba(16,185,129,0.18)" : "var(--bg-tertiary, #f1f5f9)",
+                border: d.key === daysAgoKey(0) ? "2px solid #3b82f6" : "2px solid transparent"
+              }}
+            >
+              {["T2", "T3", "T4", "T5", "T6", "T7", "CN"][i]}
+              <div style={{ fontSize: 15 }}>{d.frozen ? "🧊" : d.done ? "✓" : "·"}</div>
+            </div>
+          ))}
+        </div>
+        <MutedText>
+          Tuần này: {streakWeek.studied}/7 ngày (mục tiêu 5 ngày{streakWeek.studied >= 5 ? " — đã đạt 🎉" : ""}). Bạn có <strong>{stats.freezes ?? 0}</strong>{" "}
+          băng streak 🧊 (tối đa {MAX_FREEZES}, mỗi tháng nhận thêm 2). Nếu bỏ lỡ 1–2 ngày, băng streak tự động giữ chuỗi cho bạn khi quay lại học.
+        </MutedText>
+      </Panel>
+
       <Panel>
         <h3>Hoạt động 18 tuần</h3>
         <ActivityHeatmap log={log} goal={goal} />
@@ -208,17 +289,74 @@ export default function StatsPage() {
       </Panel>
 
       <Panel>
+        <h3>Giờ vàng ghi nhớ</h3>
+        {reviewsLogged === 0 ? (
+          <MutedText>Chưa đủ dữ liệu. Sau khi ôn tập vài buổi, MemCard sẽ chỉ ra khung giờ bạn nhớ tốt nhất.</MutedText>
+        ) : (
+          <>
+            <svg viewBox="0 0 360 100" width="100%" role="img" aria-label="Số lượt ôn và độ chính xác theo giờ trong ngày">
+              {slots.map((s) => {
+                const h = (s.total / slotMax) * 60;
+                const x = s.hour * 15 + 1;
+                const isBest = golden?.hour === s.hour;
+                return (
+                  <g key={s.hour}>
+                    <rect x={x} y={70 - h} width="12" height={Math.max(h, 1)} rx="2" fill={isBest ? "#f59e0b" : "#3b82f6"} opacity={s.total ? 1 : 0.2}>
+                      <title>{`${s.hour}h: ${s.total} lượt, đúng ${s.total ? Math.round(s.accuracy * 100) : 0}%`}</title>
+                    </rect>
+                    {s.hour % 3 === 0 && (
+                      <text x={x + 6} y="86" textAnchor="middle" fontSize="9" fill="currentColor" opacity="0.7">
+                        {s.hour}h
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+            {golden ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <MutedText>
+                  Bạn nhớ tốt nhất lúc <strong>{golden.hour}h</strong> (đúng {Math.round(golden.accuracy * 100)}% trong {golden.total} lượt).
+                </MutedText>
+                {settings.reminderTime !== hourToTime(golden.hour) && (
+                  <MyButton
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateSettings({ reminderTime: hourToTime(golden.hour), reminderEnabled: true })}
+                  >
+                    Nhắc học lúc {hourToTime(golden.hour)}
+                  </MyButton>
+                )}
+              </div>
+            ) : (
+              <MutedText>
+                Cần ít nhất {MIN_REVIEWS_FOR_ADVICE} lượt ôn (hiện có {reviewsLogged}) để gợi ý giờ vàng.
+              </MutedText>
+            )}
+          </>
+        )}
+      </Panel>
+
+      <Panel>
         <h3>
           Huy hiệu ({badges.filter((b) => b.earned).length}/{badges.length})
         </h3>
         <BadgeGrid>
-          {badges.map((b) => (
-            <BadgeCard key={b.id} $earned={b.earned} title={b.description}>
-              <span className="icon">{b.icon}</span>
-              <span className="title">{b.title}</span>
-              <span className="desc">{b.earned ? b.description : `${b.description} (${b.progress})`}</span>
-            </BadgeCard>
-          ))}
+          {badges.map((b) =>
+            b.hidden && !b.earned ? (
+              <BadgeCard key={b.id} $earned={false} title="Huy hiệu bí mật">
+                <span className="icon">❓</span>
+                <span className="title">???</span>
+                <span className="desc">Huy hiệu bí mật — hãy khám phá!</span>
+              </BadgeCard>
+            ) : (
+              <BadgeCard key={b.id} $earned={b.earned} title={b.description}>
+                <span className="icon">{b.icon}</span>
+                <span className="title">{b.title}</span>
+                <span className="desc">{b.earned ? b.description : `${b.description} (${b.progress})`}</span>
+              </BadgeCard>
+            )
+          )}
         </BadgeGrid>
       </Panel>
 

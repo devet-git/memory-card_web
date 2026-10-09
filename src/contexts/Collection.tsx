@@ -14,7 +14,8 @@ import {
   wordTombstoneKey,
   Tombstones
 } from "utils/merge";
-import { dateKey, daysAgoKey } from "utils/dates";
+import { dateKey } from "utils/dates";
+import { recordStudy, undoStudy, grantMonthlyFreezes } from "utils/streak";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
@@ -187,9 +188,9 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   const [stats, setStats] = useState<UserStats>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_STATS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) return grantMonthlyFreezes(JSON.parse(saved));
     } catch (e) {}
-    return defaultStats;
+    return grantMonthlyFreezes(defaultStats);
   });
 
   // App settings & theme
@@ -246,28 +247,9 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     }));
   }, []);
 
-  // Update streak logic
-  const checkAndUpdateStreak = useCallback(() => {
-    const today = dateKey();
-    setStats((prev) => {
-      const reviewLog = { ...(prev.reviewLog || {}), [today]: ((prev.reviewLog || {})[today] || 0) + 1 };
-      if (prev.lastStudyDate === today) {
-        return {
-          ...prev,
-          reviewLog,
-          totalCardsReviewed: prev.totalCardsReviewed + 1
-        };
-      }
-      const yesterday = daysAgoKey(1);
-      const isConsecutive = prev.lastStudyDate === yesterday;
-      return {
-        ...prev,
-        studyStreakDays: isConsecutive ? prev.studyStreakDays + 1 : 1,
-        lastStudyDate: today,
-        reviewLog,
-        totalCardsReviewed: prev.totalCardsReviewed + 1
-      };
-    });
+  // Update streak logic (streak freezes and the hour pattern live in utils/streak)
+  const checkAndUpdateStreak = useCallback((correct = true) => {
+    setStats((prev) => recordStudy(prev, correct));
   }, []);
 
   // Collection CRUD
@@ -439,7 +421,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
           };
         })
       );
-      checkAndUpdateStreak();
+      checkAndUpdateStreak((grade ?? (status === "mastered" ? 3 : 1)) >= 2);
     },
     [checkAndUpdateStreak]
   );
@@ -471,7 +453,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
           };
         })
       );
-      checkAndUpdateStreak();
+      checkAndUpdateStreak(isCorrect);
     },
     [checkAndUpdateStreak]
   );
@@ -497,19 +479,14 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
           };
         })
       );
-      checkAndUpdateStreak();
+      checkAndUpdateStreak(grade >= 2);
     },
     [checkAndUpdateStreak]
   );
 
   // Takes back the review counters of the last answer (used by "undo" in the review session)
   const undoReviewCount = useCallback(() => {
-    const today = dateKey();
-    setStats((prev) => {
-      const log = { ...(prev.reviewLog || {}) };
-      if (log[today]) log[today] = Math.max(0, log[today] - 1);
-      return { ...prev, reviewLog: log, totalCardsReviewed: Math.max(0, prev.totalCardsReviewed - 1) };
-    });
+    setStats((prev) => undoStudy(prev));
   }, []);
 
   // Bulk Quick Import (reads "front - back" or "front : back" or "front | back" or tab-delimited)

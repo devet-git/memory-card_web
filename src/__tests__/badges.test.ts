@@ -31,4 +31,24 @@ describe("computeBadges", () => {
   test("mastered cards are counted across decks", () => {
     expect(earned(computeBadges(stats(), decks(2, 5)))).toContain("master10");
   });
+
+  test("secret badges depend on the hour pattern and freezes", () => {
+    expect(earned(computeBadges(stats(), []))).not.toEqual(expect.arrayContaining(["dawn", "night", "freeze"]));
+    const ids = earned(computeBadges(stats({ hourLog: { "5": [1, 1], "23": [2, 1] }, frozenDays: ["2026-01-02"] }), []));
+    expect(ids).toEqual(expect.arrayContaining(["dawn", "night", "freeze"]));
+    expect(computeBadges(stats(), []).filter((b) => b.hidden).map((b) => b.id)).toEqual(["dawn", "night", "freeze"]);
+  });
+
+  test("frozen days keep a run going and the goal run needs the daily goal", () => {
+    const log = { "2026-01-01": 25, "2026-01-02": 30, "2026-01-04": 25, "2026-01-05": 22 };
+    const ids = earned(computeBadges(stats({ studyStreakDays: 1, reviewLog: log, frozenDays: ["2026-01-03"] }), [], 20));
+    expect(ids).toContain("streak3");
+    expect(ids).not.toContain("goal7");
+  });
+
+  test("starred cards are counted", () => {
+    const d = decks(1);
+    d[0].words = Array.from({ length: 20 }, (_, i) => ({ id: i, source: "a", target: "b", starred: true }));
+    expect(earned(computeBadges(stats(), d))).toContain("starred20");
+  });
 });

@@ -591,7 +591,7 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
               title="Tìm thẻ (Ctrl+K)"
             />
 
-            <StreakBadge title="Chuỗi ngày ôn tập liên tục của bạn">
+            <StreakBadge title={`Chuỗi ngày ôn tập liên tục của bạn • ${stats.freezes ?? 0} băng streak 🧊`}>
               <HiFire />
               <span>{stats.studyStreakDays} ngày</span>
             </StreakBadge>

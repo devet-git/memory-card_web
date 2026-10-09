@@ -106,13 +106,24 @@ export function mergeStats(local: UserStats, remote: Partial<UserStats>): UserSt
   Object.entries(remote.reviewLog || {}).forEach(([day, n]) => {
     reviewLog[day] = Math.max(reviewLog[day] || 0, n);
   });
+  const hourLog: Record<string, [number, number]> = { ...(local.hourLog || {}) };
+  Object.entries(remote.hourLog || {}).forEach(([hour, [total, ok]]) => {
+    const [t, o] = hourLog[hour] || [0, 0];
+    hourLog[hour] = [Math.max(t, total), Math.max(o, ok)];
+  });
+  const frozenDays = Array.from(new Set([...(local.frozenDays || []), ...(remote.frozenDays || [])])).sort().slice(-60);
   const remoteIsNewer = (remote.lastStudyDate || "") > local.lastStudyDate;
+  const newerFreezeMonth = (remote.freezeMonth || "") > (local.freezeMonth || "");
   return {
     ...local,
     studyStreakDays: remoteIsNewer ? remote.studyStreakDays ?? local.studyStreakDays : local.studyStreakDays,
     lastStudyDate: remoteIsNewer ? remote.lastStudyDate || local.lastStudyDate : local.lastStudyDate,
     totalCardsReviewed: Math.max(local.totalCardsReviewed, remote.totalCardsReviewed || 0),
     quizzesCompleted: Math.max(local.quizzesCompleted, remote.quizzesCompleted || 0),
-    reviewLog
+    freezes: newerFreezeMonth || remoteIsNewer ? remote.freezes ?? local.freezes : local.freezes,
+    freezeMonth: newerFreezeMonth ? remote.freezeMonth : local.freezeMonth,
+    frozenDays,
+    reviewLog,
+    hourLog
   };
 }

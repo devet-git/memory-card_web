@@ -17,7 +17,9 @@ import {
   MdOutlineLightbulb,
   MdRestartAlt,
   MdAutoAwesome,
-  MdMic
+  MdMic,
+  MdOutlineArticle,
+  MdForum
 } from "react-icons/md";
 import { IoFlashOutline } from "react-icons/io5";
 import { AiFillStar, AiOutlineStar, AiOutlinePlus, AiOutlineDelete, AiOutlineEdit } from "react-icons/ai";
@@ -35,6 +37,8 @@ import AutoFillButton from "components/AutoFillButton";
 import ActionMenu from "components/ActionMenu";
 import WordSuggest from "components/WordSuggest";
 import SuggestWordsModal from "components/SuggestWordsModal";
+import ExtractWordsModal from "components/ExtractWordsModal";
+import Roleplay from "components/study/Roleplay";
 import TransferWordsModal from "components/TransferWordsModal";
 import AIEnrichButton from "components/ai/AIEnrichButton";
 import useAIConfig from "hooks/useAIConfig";
@@ -54,7 +58,7 @@ import { useSpeak, SpeakSpinner } from "hooks/useSpeak";
 import { playSound } from "utils/sound";
 import { WordItem, MasteryStatus } from "types";
 
-type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "speaking" | "sentence" | "match" | "grid" | "table";
+type StudyMode = "card" | "quiz" | "typing" | "dictation" | "cloze" | "speaking" | "sentence" | "roleplay" | "match" | "grid" | "table";
 
 const Container = styled.div`
   display: flex;
@@ -910,6 +914,7 @@ export default function WordPage() {
   const [showAIGenerate, setShowAIGenerate] = useState(false);
   const [showAIStory, setShowAIStory] = useState(false);
   const [showSuggestWords, setShowSuggestWords] = useState(false);
+  const [showExtractWords, setShowExtractWords] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingWord, setEditingWord] = useState<WordItem | null>(null);
 
@@ -1553,6 +1558,7 @@ export default function WordPage() {
               items={[
                 { label: "Nhập hàng loạt / CSV / Anki", icon: <MdViewModule />, onClick: () => setShowBulkModal(true) },
                 { label: "Gợi ý từ phổ biến (offline)", icon: <MdOutlineLightbulb />, onClick: () => setShowSuggestWords(true) },
+                { label: "Thêm từ từ đoạn văn (offline)", icon: <MdOutlineArticle />, onClick: () => setShowExtractWords(true) },
                 // Dimmed until an API key is set; clicking then explains and offers to add one
                 {
                   label: `Tạo thẻ bằng AI${aiReady ? "" : " 🔒"}`,
@@ -1624,6 +1630,14 @@ export default function WordPage() {
             title={aiReady ? undefined : "Cần nhập API key AI để dùng tính năng này"}
           >
             <MdAutoAwesome /> Đặt câu (AI){aiReady ? "" : " 🔒"}
+          </ModeTab>
+          <ModeTab
+            $active={currentMode === "roleplay"}
+            onClick={() => setMode("roleplay")}
+            style={{ opacity: aiReady ? 1 : 0.5 }}
+            title={aiReady ? undefined : "Cần nhập API key AI để dùng tính năng này"}
+          >
+            <MdForum /> Hội thoại (AI){aiReady ? "" : " 🔒"}
           </ModeTab>
           <ModeTab $active={currentMode === "match"} onClick={() => setMode("match")}>
             <MdViewModule /> Ghép cặp
@@ -2223,6 +2237,9 @@ export default function WordPage() {
       {currentMode === "sentence" && (
         <SentencePractice words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
+      {currentMode === "roleplay" && (
+        <Roleplay words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
+      )}
       {currentMode === "match" && (
         <Matching words={words} onAnswer={(id, ok) => collectionName && recordReview(collectionName, id, ok)} />
       )}
@@ -2667,6 +2684,16 @@ export default function WordPage() {
         <SuggestWordsModal
           existingSources={words.map((w) => w.source)}
           onClose={() => setShowSuggestWords(false)}
+          onAdd={(list) => {
+            if (!collectionName) return;
+            [...list].reverse().forEach((w) => addWord(collectionName, w));
+          }}
+        />
+      )}
+      {showExtractWords && (
+        <ExtractWordsModal
+          existingSources={words.map((w) => w.source)}
+          onClose={() => setShowExtractWords(false)}
           onAdd={(list) => {
             if (!collectionName) return;
             [...list].reverse().forEach((w) => addWord(collectionName, w));

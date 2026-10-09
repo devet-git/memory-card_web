@@ -41,6 +41,12 @@ export interface UserStats {
   totalCardsReviewed: number;
   quizzesCompleted: number;
   reviewLog?: Record<string, number>; // 'YYYY-MM-DD' -> cards reviewed that day
+  // Streak freezes: a monthly allowance that keeps the streak alive across missed days
+  freezes?: number; // freezes available right now
+  freezeMonth?: string; // 'YYYY-MM' of the last monthly grant
+  frozenDays?: string[]; // 'YYYY-MM-DD' days that a freeze covered
+  // Hour-of-day study pattern: '0'..'23' -> [reviews, correct]
+  hourLog?: Record<string, [number, number]>;
 }
 
 export interface AppSettings {
