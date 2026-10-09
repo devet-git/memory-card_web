@@ -4,9 +4,11 @@ import { MdAdd, MdArrowDownward, MdArrowUpward, MdDelete } from "react-icons/md"
 import MyModal from "./MyModal";
 import MyButton from "./MyButton";
 import { MyInput } from "./MyInput";
+import SearchSelect from "./SearchSelect";
 import { lockAdmin } from "utils/admin";
 import { DonateConfig, SiteConfigError, effectiveApps, effectiveDonate, saveSiteConfig, useSiteConfigState } from "utils/siteConfig";
 import { RelatedApp, defaultApps } from "data/relatedApps";
+import { BANKS, findBank } from "data/vietnamBanks";
 
 export type AdminTab = "donate" | "apps" | "system";
 
@@ -145,11 +147,26 @@ export default function AdminConsoleModal({ initialTab = "donate", onClose }: Pr
             <input type="checkbox" checked={donate.enabled} onChange={(e) => setDonate({ ...donate, enabled: e.target.checked })} />
             Hiện mục “Mời cà phê” cho người dùng
           </label>
+          <Field as="div">
+            Ngân hàng
+            <SearchSelect
+              creatable
+              value={findBank(donate.bankId)?.bin ?? donate.bankId}
+              onChange={(v) => {
+                const bank = findBank(v);
+                setDonate({ ...donate, bankId: bank ? bank.bin : v.trim().toUpperCase(), bankName: bank ? bank.name : donate.bankName });
+              }}
+              options={BANKS.map((b) => ({ value: b.bin, label: `${b.code} - ${b.name}` }))}
+              placeholder="Chọn ngân hàng..."
+              searchPlaceholder="Tìm theo tên hoặc mã (VD: vietcombank, MB)..."
+              emptyText="Không có trong danh sách. Gõ mã ngân hàng VietQR để dùng."
+              ariaLabel="Ngân hàng"
+            />
+            <span style={{ fontWeight: 400 }}>
+              Mã VietQR: <code>{donate.bankId || "(chưa chọn)"}</code>
+            </span>
+          </Field>
           <Grid>
-            <Field>
-              Mã ngân hàng (VietQR)
-              <MyInput placeholder="MB, VCB, TCB..." value={donate.bankId} onChange={(e) => setDonate({ ...donate, bankId: e.target.value.toUpperCase() })} />
-            </Field>
             <Field>
               Tên ngân hàng hiển thị
               <MyInput value={donate.bankName} onChange={(e) => setDonate({ ...donate, bankName: e.target.value })} />
@@ -158,11 +175,11 @@ export default function AdminConsoleModal({ initialTab = "donate", onClose }: Pr
               Số tài khoản
               <MyInput inputMode="numeric" value={donate.accountNo} onChange={(e) => setDonate({ ...donate, accountNo: e.target.value })} />
             </Field>
-            <Field>
-              Tên chủ tài khoản
-              <MyInput value={donate.accountName} onChange={(e) => setDonate({ ...donate, accountName: e.target.value })} />
-            </Field>
           </Grid>
+          <Field>
+            Tên chủ tài khoản
+            <MyInput value={donate.accountName} onChange={(e) => setDonate({ ...donate, accountName: e.target.value })} />
+          </Field>
           <Note>Thông tin này hiện công khai trên mã QR của mọi người dùng.</Note>
         </div>
       )}
