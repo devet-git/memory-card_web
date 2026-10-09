@@ -11,7 +11,8 @@ const loaders = {
 	apps: () => import("pages/Ecosystem"),
 	review: () => import("pages/Review"),
 	stats: () => import("pages/Stats"),
-	share: () => import("pages/Share")
+	share: () => import("pages/Share"),
+	games: () => import("pages/Games")
 };
 
 const HomePage = lazy(loaders.home);
@@ -21,6 +22,7 @@ const EcosystemPage = lazy(loaders.apps);
 const ReviewPage = lazy(loaders.review);
 const StatsPage = lazy(loaders.stats);
 const SharePage = lazy(loaders.share);
+const GamesPage = lazy(loaders.games);
 
 export default function AppRoutes() {
 	// Once the browser is idle, fetch the remaining pages so later navigation feels instant
@@ -44,6 +46,7 @@ export default function AppRoutes() {
 					<Route path="collections/:collectionName" element={<WordPage />} />
 					<Route path="review" element={<ReviewPage />} />
 					<Route path="stats" element={<StatsPage />} />
+					<Route path="games" element={<GamesPage />} />
 					<Route path="share" element={<SharePage />} />
 					<Route path="apps" element={<EcosystemPage />} />
 				</Routes>

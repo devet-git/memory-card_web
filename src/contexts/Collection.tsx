@@ -16,6 +16,7 @@ import {
 } from "utils/merge";
 import { dateKey } from "utils/dates";
 import { recordStudy, undoStudy, grantMonthlyFreezes } from "utils/streak";
+import { applyGameResult, GameResult } from "utils/games";
 
 const STORAGE_DATA_KEY = "memcard_collections_v2";
 const STORAGE_LEGACY_KEY = "appData";
@@ -58,6 +59,7 @@ interface CollectionContextType {
   updateWordStatus: (collectionPathname: string, wordId: string | number, status: MasteryStatus, grade?: Grade) => void;
   reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
   undoReviewCount: () => void;
+  recordGame: (result: GameResult) => void;
   recordReview: (collectionPathname: string, wordId: string | number, isCorrect?: boolean) => void;
   bulkImportWords: (collectionPathname: string, text: string) => number;
   importSharedCollection: (deck: { name: string; category?: string; description?: string; words: Omit<WordItem, "id">[] }) => string;
@@ -255,6 +257,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   // Update streak logic (streak freezes and the hour pattern live in utils/streak)
   const checkAndUpdateStreak = useCallback((correct = true) => {
     setStats((prev) => recordStudy(prev, correct));
+  }, []);
+
+  // Mini-game results: coins, records and the daily challenge live in the stats so they sync with everything else
+  const recordGame = useCallback((result: GameResult) => {
+    setStats((prev) => applyGameResult(prev, result));
   }, []);
 
   // Collection CRUD
@@ -765,6 +772,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     updateWordStatus,
     reviewWord,
     undoReviewCount,
+    recordGame,
     recordReview,
     bulkImportWords,
     importSharedCollection,

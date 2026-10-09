@@ -1,3 +1,4 @@
+import { mergeGameProfiles } from "utils/games";
 import { CollectionItem, UserStats, WordItem } from "types";
 
 /**
@@ -124,6 +125,7 @@ export function mergeStats(local: UserStats, remote: Partial<UserStats>): UserSt
     freezeMonth: newerFreezeMonth ? remote.freezeMonth : local.freezeMonth,
     frozenDays,
     reviewLog,
-    hourLog
+    hourLog,
+    games: mergeGameProfiles(local.games, remote.games)
   };
 }

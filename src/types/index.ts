@@ -37,6 +37,19 @@ export interface CollectionItem {
   words: WordItem[];
 }
 
+export interface DailyResult {
+  won: boolean;
+  guesses: number;
+  grid: string; // emoji grid for sharing, one row per guess
+}
+
+export interface GameProfile {
+  coins: number;
+  played: number;
+  best: Record<string, number>; // game id -> best score (higher is better)
+  daily: Record<string, DailyResult>; // 'YYYY-MM-DD' -> result of the daily word challenge
+}
+
 export interface UserStats {
   studyStreakDays: number;
   lastStudyDate: string; // 'YYYY-MM-DD'
@@ -49,6 +62,7 @@ export interface UserStats {
   frozenDays?: string[]; // 'YYYY-MM-DD' days that a freeze covered
   // Hour-of-day study pattern: '0'..'23' -> [reviews, correct]
   hourLog?: Record<string, [number, number]>;
+  games?: GameProfile; // mini-game coins, records and the daily challenge history
 }
 
 export interface AppSettings {
