@@ -17,6 +17,7 @@ import {
 import { dateKey } from "utils/dates";
 import { recordStudy, undoStudy, grantMonthlyFreezes } from "utils/streak";
 import { applyGameResult, GameResult, profileOf } from "utils/games";
+import { applyGrammarResult, SessionResult } from "utils/grammar";
 import { purchase, equip, unequip, equippedData, applyAccent, Slot } from "utils/shop";
 import { TrashEntry, pruneTrash, trashWords, trashDeck, restoreEntry } from "utils/trash";
 
@@ -63,6 +64,7 @@ interface CollectionContextType {
   reviewWord: (collectionPathname: string, wordId: string | number, grade: Grade) => void;
   undoReviewCount: () => void;
   recordGame: (result: GameResult) => void;
+  recordGrammar: (result: SessionResult) => void;
   trash: TrashEntry[];
   restoreFromTrash: (entryId: string) => { ok: boolean; error?: string };
   removeFromTrash: (entryId: string) => void;
@@ -289,6 +291,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
   // Mini-game results: coins, records and the daily challenge live in the stats so they sync with everything else
   const recordGame = useCallback((result: GameResult) => {
     setStats((prev) => applyGameResult(prev, result));
+  }, []);
+
+  // Grammar practice: per-topic progress, and every exercise counts as study (streak, XP)
+  const recordGrammar = useCallback((result: SessionResult) => {
+    setStats((prev) => applyGrammarResult(prev, result));
   }, []);
 
   // Shop. Reads the latest stats through a ref so two quick clicks can't spend the same coins twice.
@@ -856,6 +863,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
     reviewWord,
     undoReviewCount,
     recordGame,
+    recordGrammar,
     trash,
     restoreFromTrash,
     removeFromTrash,

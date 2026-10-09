@@ -53,6 +53,14 @@ export interface GameProfile {
   daily: Record<string, DailyResult>; // 'YYYY-MM-DD' -> result of the daily word challenge
 }
 
+export interface GrammarProgress {
+  best: number; // best score of a practice session, 0-100
+  last: number; // score of the latest session, 0-100
+  attempts: number;
+  lastAt: number; // timestamp of the latest session
+  wrong: string[]; // exercise ids missed in the latest sessions and not yet answered right
+}
+
 export interface UserStats {
   studyStreakDays: number;
   lastStudyDate: string; // 'YYYY-MM-DD'
@@ -65,6 +73,7 @@ export interface UserStats {
   frozenDays?: string[]; // 'YYYY-MM-DD' days that a freeze covered
   // Hour-of-day study pattern: '0'..'23' -> [reviews, correct]
   hourLog?: Record<string, [number, number]>;
+  grammar?: Record<string, GrammarProgress>; // topic id -> progress in the grammar lessons
   games?: GameProfile; // mini-game coins, records and the daily challenge history
 }
 

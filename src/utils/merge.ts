@@ -1,4 +1,5 @@
 import { mergeGameProfiles } from "utils/games";
+import { mergeGrammar } from "utils/grammar";
 import { CollectionItem, UserStats, WordItem } from "types";
 
 /**
@@ -126,6 +127,7 @@ export function mergeStats(local: UserStats, remote: Partial<UserStats>): UserSt
     frozenDays,
     reviewLog,
     hourLog,
-    games: mergeGameProfiles(local.games, remote.games)
+    games: mergeGameProfiles(local.games, remote.games),
+    grammar: mergeGrammar(local.grammar, remote.grammar)
   };
 }

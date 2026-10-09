@@ -15,6 +15,7 @@ import {
   MdOutlineDashboardCustomize,
   MdOutlineInsights,
   MdSportsEsports,
+  MdOutlineMenuBook,
   MdOutlineSettings,
   MdSearch
 } from "react-icons/md";
@@ -581,6 +582,10 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                 <MdOutlineInsights />
                 Thống kê
               </NavItem>
+              <NavItem to="/grammar" $active={location.pathname.startsWith("/grammar")}>
+                <MdOutlineMenuBook />
+                Ngữ pháp
+              </NavItem>
               <NavItem to="/games" $active={location.pathname.startsWith("/games")}>
                 <MdSportsEsports />
                 Trò chơi
@@ -783,6 +788,14 @@ export default function MainLayout({ children }: MainLayoutProps): JSX.Element {
                 <span>Cài đặt học tập</span>
               </div>
               <div className="desc">Mục tiêu, nhắc học, tự đồng bộ, cài app</div>
+            </UtilityCard>
+
+            <UtilityCard as={Link} to="/grammar" onClick={() => setShowMobileMenuModal(false)}>
+              <div className="header">
+                <MdOutlineMenuBook color="#6366f1" />
+                <span>Ngữ pháp</span>
+              </div>
+              <div className="desc">46 chủ điểm A1 đến C2 kèm bài tập và giải thích</div>
             </UtilityCard>
 
             <UtilityCard as={Link} to="/games" onClick={() => setShowMobileMenuModal(false)}>

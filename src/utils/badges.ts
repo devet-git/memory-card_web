@@ -1,5 +1,6 @@
 import { CollectionItem, UserStats } from "types";
 import { dailyWins, profileOf } from "utils/games";
+import { masteredCount } from "utils/grammar";
 
 export interface Badge {
   id: string;
@@ -34,6 +35,7 @@ interface Ctx {
   freezesUsed: number;
   wordleWins: number; // daily word challenges won
   coins: number;
+  grammarTopics: number; // grammar topics practised to a score of 80 or more
 }
 
 // Longest run of consecutive calendar days in a list of 'YYYY-MM-DD' keys
@@ -73,6 +75,8 @@ const RULES: Rule[] = [
   { id: "goal7", icon: "🎯", title: "Đúng chỉ tiêu", description: "Đạt mục tiêu ngày 7 ngày liên tiếp", target: 7, value: (c) => c.goalRun },
   { id: "wordle7", icon: "🔤", title: "Cao thủ đoán chữ", description: "Thắng 7 thử thách đoán chữ hằng ngày", target: 7, value: (c) => c.wordleWins },
   { id: "coins500", icon: "🪙", title: "Triệu phú xu", description: "Tích lũy 500 xu từ các trò chơi", target: 500, value: (c) => c.coins },
+  { id: "grammar5", icon: "📘", title: "Nền tảng ngữ pháp", description: "Nắm vững 5 chủ điểm ngữ pháp (đạt từ 80%)", target: 5, value: (c) => c.grammarTopics },
+  { id: "grammar20", icon: "🎓", title: "Cử nhân ngữ pháp", description: "Nắm vững 20 chủ điểm ngữ pháp", target: 20, value: (c) => c.grammarTopics },
   { id: "dawn", icon: "🌅", title: "Chim sớm", description: "Ôn bài lúc 4–6 giờ sáng", target: 1, hidden: true, value: (c) => c.dawn },
   { id: "night", icon: "🦉", title: "Cú đêm", description: "Ôn bài sau 23 giờ", target: 1, hidden: true, value: (c) => c.night },
   { id: "freeze", icon: "🧊", title: "Phao cứu sinh", description: "Dùng băng streak để giữ chuỗi ngày", target: 1, hidden: true, value: (c) => c.freezesUsed }
@@ -95,7 +99,8 @@ export function computeBadges(stats: UserStats, collections: CollectionItem[], d
     night: hourReviews(stats, [23, 0, 1, 2, 3]),
     freezesUsed: frozen.length,
     wordleWins: dailyWins(profileOf(stats).daily),
-    coins: profileOf(stats).coins
+    coins: profileOf(stats).coins,
+    grammarTopics: masteredCount(stats.grammar)
   };
   return RULES.map((r) => {
     const value = r.value(ctx);
